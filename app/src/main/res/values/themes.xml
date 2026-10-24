@@ -1,0 +1,4 @@
+<resources>
+    <!-- 창 배경만 담당한다. 화면 테마는 Compose(ui/theme)에서 정한다. -->
+    <style name="Theme.PleosApp" parent="android:Theme.DeviceDefault.NoActionBar" />
+</resources>

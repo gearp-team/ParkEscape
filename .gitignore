@@ -1,0 +1,18 @@
+# Pleos 참조 키트: 문서·SDK 재배포 방지
+/pleos-claude-kit/
+/pleos-claude-kit.zip
+
+# 릴리스 서명 키와 비밀번호
+/keystore/
+/keystore.properties
+
+# 빌드·IDE·로컬 도구
+.gradle/
+.kotlin/
+build/
+/captures
+local.properties
+.idea/
+*.iml
+.DS_Store
+/.omc/

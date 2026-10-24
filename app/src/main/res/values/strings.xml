@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">PleosApp</string>
+
+    <string name="driving_state_parked">정차 중</string>
+    <string name="driving_state_restricted">주행 중 · 간소화 화면</string>
+    <string name="fake_sdk_badge">Fake 데이터</string>
+
+    <string name="battery_title">배터리</string>
+    <string name="battery_value">%1$d%%</string>
+    <string name="value_unknown">—</string>
+
+    <string name="location_title">현재 위치</string>
+    <string name="location_coordinates">%1$.5f, %2$.5f</string>
+    <string name="location_refresh">새로고침</string>
+</resources>
