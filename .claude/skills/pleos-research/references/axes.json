@@ -1,0 +1,82 @@
+[
+  {
+    "key": "platform",
+    "title": "Pleos 플랫폼 역량과 제약",
+    "questions": [
+      "공모전 참가자가 지금 실제로 쓸 수 있는 SDK·API는 무엇이고(승인 상태), 준비 중인 것은 무엇인가?",
+      "Vehicle SDK로 읽을 수 있는 차량 신호 도메인과 대표 API는 무엇이며, 에뮬레이터와 Virtual Console로 재현할 수 있는 신호는 무엇인가?",
+      "NaviHelper로 할 수 있는 일(경로 정보 조회, 경로 요청, 이벤트 수신)과 제약(단일 경로 정책 등)은 무엇인가?",
+      "Gleo AI 연동(App Schema)으로 무엇을 할 수 있고, 에뮬레이터에서 확인된 범위는 어디까지인가?",
+      "주행 규제, 앱 카테고리, 성능 기준, 퍼미션 승인처럼 심사에서 걸리는 정책은 무엇인가?"
+    ],
+    "sourceHints": [
+      "키트만으로 답한다: pleos-claude-kit/CLAUDE.md 2~4장, API_INDEX.md, docs/pleos-only/, 프로젝트 CLAUDE.md의 '실제로 확인한 함정'",
+      ".claude/skills/pleos-idea-evaluation/references/platform-capability.md (Virtual Console 신호 63개, 에뮬레이터 검증 사실)",
+      "웹은 공식 사이트(document.pleos.ai, appdevchallenge.auto-hmg.io)만 쓴다"
+    ],
+    "keywords": ["Pleos Connect SDK", "Pleos Playground", "Gleo AI", "Pleos App Market"]
+  },
+  {
+    "key": "user-needs",
+    "title": "운전자·동승자 페인포인트",
+    "questions": [
+      "국내 운전자가 차 안에서 겪는 대표적인 불편은 무엇인가? (출퇴근 정체, 주차, EV 충전소 찾기·대기, 장거리 피로, 아이·반려동물 동승, 고령 운전, 배달·영업·대리운전 같은 업무 운전)",
+      "운전자와 동승자는 차 안 시간을 어떻게 쓰는가? 정차·신호 대기·충전 대기처럼 주행하지 않는 시간은 얼마나 되는가?",
+      "휴대폰 앱이나 기존 내비·커넥티드 서비스로 해결되지 않는 지점은 무엇인가?",
+      "기획서 근거로 쓸 수 있는 통계(평균 통근 시간, 하루 차량 이용 시간, 운전자 수, EV 보급 대수 등)는 무엇인가?"
+    ],
+    "sourceHints": [
+      "A: 국토교통부 자동차 등록 통계, 한국교통안전공단·한국교통연구원 조사, 통계청, 한국소비자원",
+      "B: 언론 보도, 리서치 기관(컨슈머인사이트 등) 조사",
+      "C(정성 근거만): 보배드림, 클리앙 자동차 게시판, 전기차 동호회, 앱 스토어 리뷰"
+    ],
+    "keywords": ["운전자 불편 조사", "출퇴근 평균 시간 통계", "전기차 충전 대기", "차량 내 시간 활용", "driver pain points in-car", "commute time Korea statistics"]
+  },
+  {
+    "key": "market",
+    "title": "차량용 앱·인카 서비스 시장과 경쟁",
+    "questions": [
+      "Android Automotive OS 앱 생태계(Google Play의 차량용 앱 카테고리, 인기 앱)는 어떤 모습인가?",
+      "현대차그룹 인포테인먼트 앱 마켓(현대·기아·제네시스 앱마켓, Pleos App Market)의 현황과 탑재 앱은 무엇인가?",
+      "해외 완성차의 인카 앱·서비스 사례(Tesla, Mercedes MBUX, BMW, NIO·Xpeng·Li Auto 등)에서 배울 점은 무엇인가?",
+      "인카 커머스·결제·구독 같은 수익 모델의 사례와 성과는 무엇인가?",
+      "Pleos 탑재 차량과 출시 계획처럼 예상 MAU 추정에 쓸 수 있는 근거는 무엇인가?"
+    ],
+    "sourceHints": [
+      "A: 현대차그룹·42dot 공식 발표, IR 자료, Google 공식 문서",
+      "B: 언론·업계 매체(전자신문, 오토타임즈, The Verge, Electrek 등)"
+    ],
+    "keywords": ["Pleos Connect 탑재 차량", "현대차 앱마켓", "Android Automotive apps", "in-car commerce", "차량 구독 서비스", "MBUX apps", "NIO app ecosystem"]
+  },
+  {
+    "key": "tech-trends",
+    "title": "SDV·인카 AI·차량 데이터 기술 트렌드",
+    "questions": [
+      "SDV(소프트웨어 중심 차량)와 차량 데이터 API 개방은 어떻게 진행되고 있는가?",
+      "인카 AI 에이전트(음성 비서, LLM 연동, Gleo AI)는 어디까지 왔고 무엇을 할 수 있는가?",
+      "EV 생태계(충전 인프라, V2L, 배터리 관리)와 연결된 앱 기회는 무엇인가?",
+      "정차 중 엔터테인먼트, 개인화·프로필, 동승자 경험 분야의 최근 흐름은 무엇인가?"
+    ],
+    "sourceHints": [
+      "A: 완성차·플랫폼 기업 공식 발표, 표준 기구 문서",
+      "B: 업계 리포트 요약, 기술 매체"
+    ],
+    "keywords": ["SDV 차량 데이터 API", "in-car AI assistant LLM", "Gleo AI 현대차", "V2L 활용 서비스", "in-car entertainment parked"]
+  },
+  {
+    "key": "regulation-safety",
+    "title": "규제·안전·개인정보",
+    "questions": [
+      "국내 도로교통법은 운전 중 영상표시장치 시청·조작을 어떻게 규정하는가? 예외는 무엇인가?",
+      "운전자 주의분산 가이드라인(NHTSA Visual-Manual Guidelines, 국내 기준)은 화면 조작 시간·방식을 어떻게 제한하는가?",
+      "위치정보법·개인정보보호법상 위치·주행 데이터를 수집·이용하려면 무엇이 필요한가?",
+      "어린이·동승자 관련 규정이나 안전 이슈 중 앱 아이디어에 영향을 주는 것은 무엇인가?",
+      "위 규제가 Pleos 정책(주행 규제, distractionOptimized, 심사 가이드)과 어떻게 맞물리는가?"
+    ],
+    "sourceHints": [
+      "A: 국가법령정보센터(도로교통법, 위치정보법, 개인정보보호법), NHTSA 공식 문서",
+      "키트: docs/pleos-only/vehicle-app-planning-guide/driver-distraction-guideline.md, driving-restiction-policy.md, security-privacy.md"
+    ],
+    "keywords": ["도로교통법 영상표시장치 운전 중", "NHTSA visual-manual distraction guidelines", "위치정보법 동의", "차량 데이터 개인정보"]
+  }
+]

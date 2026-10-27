@@ -6,6 +6,10 @@
 /keystore/
 /keystore.properties
 
+# 하네스 중간 산출물(웹 수집 자료 포함, 확정본은 docs/)
+/_workspace/
+/_workspace_*/
+
 # 빌드·IDE·로컬 도구
 .gradle/
 .kotlin/
@@ -15,4 +19,4 @@ local.properties
 .idea/
 *.iml
 .DS_Store
-/.omc/
+.omc/

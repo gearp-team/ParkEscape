@@ -68,22 +68,31 @@ emulator -avd Pleos_Connect_v2.1
 adb wait-for-device && until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 2; done
 ```
 
-**주행 상태 바꾸기(Virtual Console API)**: 키트 지시서의 `cmd hmg_car_service … driving_regulation`은 이 에뮬레이터에 서비스가 없어 동작하지 않고, `cmd car_service inject-vhal-event`도 막혀 있다. Virtual Console을 쓰되, 콘솔은 브라우저 세션 heartbeat(`POST /browser/session`, 1초 간격)가 있는 동안에만 제어를 받는다(없으면 `{"error":"emulator_inactive"}`).
+**주행 상태와 차량 신호 바꾸기**: 키트 지시서의 `cmd hmg_car_service … driving_regulation`은 이 에뮬레이터에 서비스가 없어 동작하지 않고, `cmd car_service inject-vhal-event`도 막혀 있다. Virtual Console을 쓴다. 콘솔은 브라우저 세션 heartbeat(`POST /browser/session`, 1초 간격)가 있는 동안에만 쓰기를 받지만(없으면 `{"error":"emulator_inactive"}`), 보낸 상태는 heartbeat가 끝나도 유지된다. 아래 스크립트가 heartbeat를 처리한다.
 
 ```bash
-adb forward tcp:8088 tcp:8088 && (for i in $(seq 30); do curl -s -X POST "http://127.0.0.1:8088/browser/session?client=cli" >/dev/null; sleep 1; done) & sleep 2; curl -s -X PUT "http://127.0.0.1:8088/vehicle/gear?gear=Drive"
+.claude/skills/pleos-feature-dev/scripts/vc.sh drive 40
 ```
 
-기어 값은 `Park`/`Reverse`/`Neutral`/`Drive`. 다른 엔드포인트(`/vehicle/controls`, `/vehicle/body`, `/vehicle/hvac`, `/vehicle/state`, `/vehicle/catalog`)도 모두 `PUT`/`GET`이고 같은 heartbeat가 필요하다. 확인: `adb shell dumpsys car_service --services CarDrivingStateService | grep "Current Driving State"`(0 정차, 1 공회전, 2 주행).
+```bash
+.claude/skills/pleos-feature-dev/scripts/emu.sh state
+```
+
+`vc.sh`는 `park`/`idle`/`drive [kph]`, `set <feature-id> <value> [area]`(예: `set seat-occupancy true rear_left`), `features`(신호 63개 목록), `put`/`get`, `hold`/`release`(세션 유지)를 지원한다. 속도는 카탈로그에 없지만 `/vehicle/controls?speed=`로 바뀐다. `emu.sh`는 `boot`/`settle`/`install`/`launch`/`shot`/`state`/`logs`를 지원한다. 창을 세로 1단(841×1210dp)으로 나누려면 `spike_w1.sh window split`, 되돌리려면 `window join`.
 
 ## 실제로 확인한 함정 (키트 지시서보다 우선)
 
 - **`VehicleException`을 쓸 수 없다.** 배포된 Vehicle 2.3.2 AAR에서 이 클래스는 난독화(`callback.exception.a`)되어 있고 `ErrorCode` enum은 없다. 키트 지시서 3.1절과 공식 문서의 `if (e is VehicleException) e.errorCode`는 컴파일되지 않는다. `e.message`에 ErrorCode 이름이 들어 있다(`data/vehicle/PleosVehicleRepository.kt`의 `describe()`). `onFailed`에는 `IllegalArgumentException`(지원하지 않는 area 등)도 들어온다.
 - **콜드 부팅 직후 1~2분은 테스트하지 말 것.** 이미지 자체 버그로 SystemUI가 반복해서 죽고(`SeatTempDynamicInteractorView`의 `CalledFromWrongThreadException`), 그때 실행한 앱은 `remove task`로 종료된다. 확인: `adb logcat -d -b crash | grep -c 'Process: com.android.systemui'`가 더 늘지 않을 때까지 기다린다.
 - 에뮬레이터 기본값: VIN `"invalid"`, EV SOC 100%, NaviHelper 현재 위치 37.4127, 127.0947(성남 수정구). `DOOR_LOCK`은 `DoorArea(DoorValue.ROW_1_LEFT)`를 지원하지 않으므로 area는 capability 조회 결과로 고른다.
-- 기어 D·속도 0(공회전)에서 `requiresDistractionOptimization`은 true지만 `LIMIT_CONTENT` 비트는 켜지지 않았다. 규제 UI는 비트별로 따로 확인한다.
+- 이 에뮬레이터의 주행 규제 설정: 정차 `0x0`, 공회전(D, 0km/h)·주행(D, 40km/h) 모두 `requiresDO=true`에 `0x50`(NO_VIDEO + NO_SETUP), 상태 불명 `0x1ff`. 시속 40km/h에서도 `LIMIT_CONTENT`가 꺼져 있다(키트의 "그외 지역" 규칙). `dumpsys … CarUxRestrictionsManagerService`의 첫 `State:unknown` 블록은 현재 값이 아니라 상태 불명용 설정이다(`emu.sh state`가 현재 상태의 블록만 보여 준다). 다른 지역은 더 엄격하므로 UI는 비트별로 분기한다.
 - 에뮬레이터에는 FusedLocation 서비스(`ai.pleos.playground.service.location.fused`)와 음성 서비스(`ai.pleos.playground.caas`) 패키지가 들어 있다. 실제 동작은 아직 검증하지 않았다.
 - 앱을 설치하면 Gleo 쪽(`[GAA]` 로그)이 사용자 앱의 `schema.json`을 스캔한다. 실제로 Gleo가 앱 액션을 호출하는지는 아직 확인하지 않았다.
+- **Virtual Console은 세션을 새로 열 때마다 앰비언트 색을 `#ffffff`로, 풍량 0을 2로 되돌린다.** `vc.sh` 호출 하나하나가 세션을 연다. 값을 유지해야 하는 시연·리허설은 `vc.sh hold`로 시작하고 `vc.sh release`로 끝낸다.
+- **앱 사용자는 10이다.** `adb shell pm clear <pkg>`로는 앱 데이터가 지워지지 않는다. `pm clear --user 10 <pkg>`를 쓴다. Pleos에서는 HOME 키로 앱이 멈추지 않으므로(onStop 없음), 앱 전환 확인은 차량 설정 앱으로 한다.
+- **SDK 값과 Virtual Console 값의 방향이 다른 신호가 있다(2026-10-26 실측).** 핸들 각도는 부호가 반대다(SDK = −VC). 좌석 점유는 값이 반대로 온다(VC 점유 → SDK false). 그래서 앱은 운전석 기준으로 보정한다. 앰비언트 색은 알파 0x00으로 오고, `getAmbientLightSwitch`는 VC와 무관하게 항상 OFF다. 근거: `_workspace/05_build/spike_w1.md`.
+- **Vehicle 2.3.2 `unregisterReadingLightState`는 해제하지 않고 다시 등록한다**(SDK 소스 `LightImpl.kt`). 독서등 리스너는 앱 수명 동안 한 번만 등록해 공유한다(`PleosCabinLightRepository`).
+- 에뮬레이터는 인터넷이 되지만 Google Play 서비스(GMS)가 없다. Firebase·FCM·Google 지도 SDK 등 GMS 의존 라이브러리는 쓰지 않는다. 외부 서버 통신 규칙은 `.claude/skills/pleos-idea-evaluation/references/platform-capability.md` 7절.
 
 ## 키트 경로 규칙
 
@@ -92,6 +101,19 @@ adb forward tcp:8088 tcp:8088 && (for i in $(seq 30); do curl -s -X POST "http:/
 - `docs/` 파일의 첫 줄 `<!-- source: https://document.pleos.ai/... -->`가 원문 URL이다. 정책·요건을 근거로 들 때 이 URL을 인용한다.
 - API를 호출하는 코드를 쓰기 전에 시그니처와 `@RequiresPermission`을 확인한다: `grep -n "<메서드명>" pleos-claude-kit/API_INDEX.md`, `grep -rn "fun <메서드명>" pleos-claude-kit/sdk-artifacts/sources/`.
 - TextToSpeech·SpeechToText는 소스 jar가 없으므로 `API_INDEX.md`와 `api-reference/`(Dokka)만 근거로 쓴다. 42dot SDK 라이선스 3.4조가 디컴파일·디스어셈블을 금지하므로 AAR을 `javap` 등으로 열어 보지 않는다.
+
+## 하네스: Pleos 앱 스튜디오
+
+**목표:** 리서치와 아이디어 도출부터 기획서·구현·제출 점검까지, Pleos Connect 공모전 출품 앱을 단계별 에이전트 팀으로 만든다.
+
+**호출 조건:** 차량 앱 아이디어 찾기, 시장·운전자 니즈·규제 조사, 아이디어 평가·선택, 기획서(접수양식)·기능 명세 작성·수정, 기획한 기능 구현, 제출 점검을 요청받으면 `pleos-app-studio` 스킬을 사용한다. 리서치만 다시, 아이디어 다시 뽑기, 기획서 보완, 기능 추가 같은 후속 요청에도 같은 스킬을 쓴다. 이미 정해진 작은 코드 수정 하나는 `pleos-feature-dev`를 직접 쓰고, 단순 질문에는 바로 답한다. 중간 산출물은 `_workspace/`(git 제외), 확정 산출물은 `docs/`에 둔다.
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+| --- | --- | --- | --- |
+| 2026-10-24 | Harness v2로 처음 구성(에이전트 8, 스킬 7, 워크플로 스크립트 2) | 전체 | 아이디어 도출(리서치·분석)부터 공모전 제출까지 한 흐름으로 진행하기 위해 |
+| 2026-10-24 | 워크플로에 사용자 정의 에이전트 실패 시 재시도 추가, `scriptPath` 절대 경로화, 리서치 기본 규모 축소(발견 8·핵심 주장 3) | pleos-app-studio | 축소 시험 실행에서 같은 세션의 신규 에이전트 미등록·상대 경로 실패·축 1개당 약 45만 토큰을 확인 |
+| 2026-10-27 | `vc.sh hold`/`release`, `spike_w1.sh`(신호·게이트·창 분할 점검), `ui.sh`(화면 글자로 버튼 누르기) 추가, 에뮬레이터 함정 4개 기록 | pleos-feature-dev, CLAUDE.md | 구현 1~2주차에 VC 세션 초기화·앱 사용자 10·신호 극성·독서등 SDK 결함을 실측 |
 
 ## Pleos 플랫폼·공모전 지시서 (키트)
 
