@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    기능 플래그 pleos.drivingNotice=true 빌드에서만 합쳐진다(app/build.gradle.kts의 androidComponents.onVariants).
+    10/28 설명회에서 게임 앱의 DO 선언이 공식 허용될 때만 켠다(기획 F1). 기본 빌드에는 distractionOptimized가 없다.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity android:name=".MainActivity">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
+    </application>
+</manifest>

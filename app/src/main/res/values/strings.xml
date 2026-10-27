@@ -1,15 +1,156 @@
 <resources>
     <string name="app_name">PleosApp</string>
+    <string name="game_title">차 방탈출</string>
 
-    <string name="driving_state_parked">정차 중</string>
-    <string name="driving_state_restricted">주행 중 · 간소화 화면</string>
-    <string name="fake_sdk_badge">Fake 데이터</string>
+    <!-- 게이트 상태 -->
+    <string name="gate_open">정차 중 · 지금 시작할 수 있어요</string>
+    <string name="gate_open_short">정차 중</string>
+    <string name="gate_closed">기어를 P에 두면 시작할 수 있어요</string>
+    <string name="gate_unknown">주행 상태를 확인하고 있어요</string>
 
-    <string name="battery_title">배터리</string>
-    <string name="battery_value">%1$d%%</string>
-    <string name="value_unknown">—</string>
+    <!-- S0 홈 -->
+    <string name="control_brake">브레이크</string>
+    <string name="control_steering">핸들</string>
+    <string name="control_climate">공조</string>
+    <string name="control_cabin_light">실내 조명</string>
+    <string name="car_top_description">위에서 본 차량</string>
+    <string name="home_controls_caption">표시한 곳을 직접 조작하면 퍼즐이 풀려요. 앱은 차를 움직이지 않아요.</string>
+    <string name="home_length_title">판 길이</string>
+    <string name="home_length_subtitle">고른 길이만큼 퍼즐이 나와요</string>
+    <string name="home_length_option">%1$d분</string>
+    <string name="home_length_unavailable">이 길이는 지원 조작이 부족해요</string>
+    <string name="home_no_length">이 차에서는 지원하는 조작이 부족해요</string>
+    <string name="home_loading">이 차에서 쓸 수 있는 조작을 확인하고 있어요</string>
+    <string name="home_puzzle_count">퍼즐 %1$d개</string>
+    <string name="home_puzzle_mix">지시형 %1$d · 추리형 %2$d · 마지막 봉인 1</string>
+    <string name="home_best">최고 기록</string>
+    <string name="home_best_none">아직 없어요</string>
+    <string name="home_best_none_short">기록 없음</string>
+    <string name="home_saved_title">저장된 판</string>
+    <string name="home_saved_detail">%1$d분 판 · 퍼즐 %2$d/%3$d · 남은 시간 %4$s</string>
+    <string name="home_theme_title">우주선 비상 전원 복구</string>
+    <string name="home_theme_detail">이번 테마 · 차 안의 조작으로 꺼진 전원을 되살려요</string>
+    <string name="home_start">%1$d분 판 시작</string>
+    <string name="home_start_hint">시작하기 전에 기어 P와 주차 브레이크를 한 번 더 확인해요</string>
+    <string name="home_board_unavailable">지금 차 상태로는 판을 만들 수 없었어요. 판 길이를 다시 골라 주세요.</string>
+    <string name="resume">이어하기</string>
+    <string name="home">홈</string>
+    <string name="settings">설정</string>
+    <string name="back_home">홈으로</string>
 
-    <string name="location_title">현재 위치</string>
-    <string name="location_coordinates">%1$.5f, %2$.5f</string>
-    <string name="location_refresh">새로고침</string>
+    <!-- S1 준비 -->
+    <string name="ready_participants">참가자</string>
+    <string name="ready_participant_count">%1$d명</string>
+    <string name="ready_seat_caption">앉은 자리는 차가 알려 줘요. 감지되지 않으면 자리를 눌러 직접 고를 수 있어요.</string>
+    <string name="ready_seat_caption_resume">이어하는 판은 참가 자리를 바꿀 수 없어요.</string>
+    <string name="ready_seat_caption_driver_only">이 차에서는 자리 단서를 쓸 수 없어 운전석 1명으로 해요.</string>
+    <string name="ready_title">시작 전에 확인해 주세요</string>
+    <string name="ready_subtitle">%1$d분 판 · 퍼즐 %2$d개</string>
+    <string name="ready_subtitle_resume">이어하기 · 퍼즐 %1$d/%2$d · 남은 시간 %3$s</string>
+    <string name="seat_driver">운전석</string>
+    <string name="seat_passenger">조수석</string>
+    <string name="seat_rear_left">2열 왼쪽</string>
+    <string name="seat_rear_right">2열 오른쪽</string>
+    <string name="seat_joined">참가</string>
+    <string name="seat_empty">비어 있음</string>
+    <string name="seat_unavailable">고를 수 없음</string>
+    <string name="seat_button_joined">%1$s, 참가</string>
+    <string name="seat_button_empty">%1$s, 비어 있음</string>
+    <string name="idle_title">공회전 안내</string>
+    <string name="idle_body">시동을 켠 채 오래 서 있으면 지역에 따라 공회전 제한에 걸릴 수 있어요. 공조 퍼즐은 한 판에 2개까지만 나와요.</string>
+    <string name="idle_dont_show">다시 보지 않기</string>
+    <string name="ready_confirm">기어 P·주차 브레이크를 확인했어요</string>
+    <string name="ready_confirm_hint">판이 끝나면 바꾼 설정을 원래대로 돌리도록 알려 드려요. 출발하면 판은 저장돼요.</string>
+
+    <!-- S-P 일시정지 -->
+    <string name="pause_closed_title">정차하면 이어할 수 있어요</string>
+    <string name="pause_closed_detail">진행을 저장했어요 · %1$d분 판 퍼즐 %2$d/%3$d · 남은 시간 %4$s</string>
+    <string name="pause_closed_note">주행 중에는 버튼이 눌리지 않아요. 퍼즐과 암호표는 이 화면에 남기지 않아요.</string>
+    <string name="pause_open_title">이어서 할까요?</string>
+    <string name="pause_open_detail">%1$d분 판 퍼즐 %2$d/%3$d · 남은 시간 %4$s</string>
+    <string name="pause_open_note">이어하기를 누르면 기어 P·주차 브레이크를 한 번 더 확인해요. 저절로 다시 시작하지 않아요.</string>
+
+    <!-- 설정 -->
+    <string name="settings_ev">내 차는 전기차</string>
+    <string name="settings_ev_detail">켜면 공조 퍼즐 수 제한과 공회전 안내를 쓰지 않아요</string>
+    <string name="settings_idle_reset">공회전 안내 다시 보기</string>
+    <string name="settings_idle_reset_detail">다음 판 준비 화면에서 안내를 다시 보여 줘요</string>
+    <string name="settings_close">닫기</string>
+
+    <!-- S-H: 기능 플래그 pleos.drivingNotice 빌드의 주행 중 한 줄 화면 -->
+    <string name="driving_notice">정차하면 이어하기</string>
+
+    <!-- S2 진행 -->
+    <string name="play_progress">퍼즐 %1$d / %2$d</string>
+    <string name="play_time_left">남은 시간</string>
+    <string name="play_solved_line">풀린 퍼즐: %1$s · 비상 전원 %2$d/%3$d 복구됨</string>
+    <string name="play_solved_none">비상 전원 %1$d/%2$d 복구됨</string>
+    <string name="play_cipher_table">암호표</string>
+    <string name="play_cipher_note">판마다 바뀌어요</string>
+    <string name="play_hint_open">힌트 보기 (%1$d/%2$d)</string>
+    <string name="play_hint_more">힌트 하나 더 (%1$d/%2$d)</string>
+    <string name="play_hint_done">힌트를 모두 봤어요 (%1$d/%2$d)</string>
+    <string name="play_hint_short">힌트</string>
+    <string name="play_hint_label">힌트 %1$d</string>
+    <string name="play_skip">이 퍼즐 건너뛰기</string>
+    <string name="play_skip_note">60초 동안 신호가 바뀌지 않았어요. 건너뛰면 이 판은 기록에 남지 않아요.</string>
+    <string name="play_seal_button">봉인 해제</string>
+    <string name="play_gauge_temperature">지금 온도 설정</string>
+    <string name="play_gauge_fan">지금 풍량</string>
+    <string name="play_gauge_brightness">지금 실내 조명 밝기</string>
+    <string name="play_gauge_recirculation">지금 내외기</string>
+    <string name="play_gauge_color">지금 실내 조명 색</string>
+    <string name="play_gauge_reading">지금 독서등</string>
+    <string name="play_gauge_steering">지금 핸들</string>
+    <string name="play_gauge_brake">밟은 횟수</string>
+    <string name="play_gauge_seal">봉인</string>
+    <string name="play_target_zone">목표 구간</string>
+    <string name="play_note_direct">목표 구간에 들어오면 다음 단서로 바로 넘어가요.</string>
+    <string name="play_note_hidden">목표는 단서를 풀어서 찾아요. 맞으면 다음 단서로 바로 넘어가요.</string>
+    <string name="play_note_steering_direct">목표 칸에 1초 머문 뒤 핸들을 가운데로 돌리면 다음 단서로 넘어가요.</string>
+    <string name="play_note_steering_hidden">목표 칸은 단서를 풀어서 찾아요. 그 칸에 1초 머문 뒤 가운데로 돌리면 넘어가요.</string>
+    <string name="play_value_unknown">확인 중</string>
+    <string name="play_recirc_outside">외기</string>
+    <string name="play_recirc_inside">내기 순환</string>
+    <string name="play_light_on">켜짐</string>
+    <string name="play_light_off">꺼짐</string>
+    <string name="play_steering_center">가운데</string>
+    <string name="play_steering_left">왼쪽</string>
+    <string name="play_steering_right">오른쪽</string>
+    <string name="play_steering_hold">칸 안에서 1초 기다려요</string>
+    <string name="play_steering_holding">칸 안에 있어요 · %1$s초</string>
+    <string name="play_steering_return">잘했어요. 이제 핸들을 가운데로 돌려 주세요</string>
+    <string name="play_brake_window">30초 안에, 누름 사이 8초를 넘기지 말고 이어서 밟아 주세요</string>
+    <string name="play_brake_left">남은 %1$d초</string>
+    <string name="play_brake_start">브레이크를 끝까지 떼었다가 밟으면 한 번이에요</string>
+    <string name="play_seal_note">이 차는 브레이크 신호를 지원하지 않아 화면 버튼으로 봉인을 풀어요</string>
+
+    <!-- S3 결과 -->
+    <string name="result_escaped">탈출 성공</string>
+    <string name="result_timed_out">시간 초과</string>
+    <string name="result_escaped_detail">비상 전원을 모두 되살렸어요</string>
+    <string name="result_timed_out_detail">비상 전원 %1$d/%2$d 복구 · 다음 판에서 다시 도전해요</string>
+    <string name="result_time_label">소요 시간 · %1$d분 판</string>
+    <string name="result_new_best">새 최고 기록</string>
+    <string name="result_previous_best">이전 %1$s</string>
+    <string name="result_best">%1$d분 판 최고 기록 %2$s</string>
+    <string name="result_skipped">건너뛴 퍼즐이 있어 기록에 남기지 않아요</string>
+    <string name="result_checklist_title">바꾼 설정을 원래대로 돌려 주세요</string>
+    <string name="result_checklist_detail">원래 값으로 돌아오면 저절로 체크돼요 · %1$d/%2$d 완료</string>
+    <string name="result_checklist_empty">이 판에서 되돌릴 설정이 없어요</string>
+    <string name="result_checklist_paused">정차하면 다시 확인해요</string>
+    <string name="result_restored">완료</string>
+    <string name="result_restore_needed">돌려 주세요</string>
+    <string name="result_new_board">새 판</string>
+    <string name="result_home">홈</string>
+
+    <!-- 확인 대화상자(정차 중에만) -->
+    <string name="overwrite_title">저장된 판을 지우고 새 판을 시작할까요?</string>
+    <string name="overwrite_detail">새 판이 시작되면 저장된 %1$d분 판(퍼즐 %2$d/%3$d)은 지워져요.</string>
+    <string name="overwrite_confirm">새 판 시작</string>
+    <string name="cancel">취소</string>
+    <string name="demo_warning_title">시연 0단계와 다른 값이 있어요</string>
+    <string name="demo_warning_detail">그대로 시작하면 판이나 복구 목표가 대본과 달라질 수 있어요.</string>
+    <string name="demo_warning_row">지금 %1$s · 대본 %2$s</string>
+    <string name="demo_warning_confirm">그대로 시작</string>
 </resources>

@@ -9,11 +9,13 @@ composeBom = "2025.04.01"
 coroutines = "1.8.1"
 junit = "4.13.2"
 pleosVehicle = "2.3.2"
-pleosNaviHelper = "3.0.5"
+# 퍼즐 세션·최고 기록 저장(F2-engine). DataStore 1.1.1은 compileSdk 35·AGP 8.8.2·Kotlin 2.0.0과 맞는다.
+datastore = "1.1.1"
+# Kotlin 2.0.0 플러그인과 함께 검증한 버전(F2-engine). NaviHelper(navi-data)도 1.6.3이라, PT에서 되살려도 맞는다.
+kotlinxSerialization = "1.6.3"
 
 [libraries]
 pleos-vehicle = { group = "ai.pleos.playground", name = "Vehicle", version.ref = "pleosVehicle" }
-pleos-navihelper = { group = "ai.pleos.playground", name = "NaviHelper", version.ref = "pleosNaviHelper" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
@@ -24,6 +26,8 @@ androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
@@ -31,3 +35,4 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

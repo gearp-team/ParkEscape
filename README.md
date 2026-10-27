@@ -11,6 +11,16 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
    - 소스에서 빌드: `./gradlew installDebug`
    - 제출용 APK: `adb install -r apk/TEAM_PleosApp_release.apk`
 3. 앱 라이브러리에서 **PleosApp**을 실행합니다.
+4. 기어가 P(정차)일 때만 판을 시작·이어할 수 있습니다. 판 길이를 고르고 "시작" → 참가 자리 확인 → "기어 P·주차 브레이크를 확인했어요"를 누르면 판이 시작됩니다.
+   - 기어를 D로 바꾸면 시스템이 앱을 "주행 중에는 사용할 수 없습니다." 화면으로 덮고, 앱은 그 순간 판을 저장하고 일시정지합니다. 다시 P로 바꾸면 "이어하기" → P 확인으로 같은 퍼즐부터 이어집니다(저절로 다시 시작하지 않음).
+   - Virtual Console로 기어를 바꾸는 방법은 아래 "테스트 환경"을 참고하세요.
+
+### 디버그 빌드 전용 옵션
+- 시연 시드 고정: `adb shell am start -n com.team.pleosapp/.MainActivity --es seed demo5` (신호 풀 8종 고정, 기획 5절 시연 판)
+- Fake SDK 빌드(`-Ppleos.useFakeSdk=true`)에서 주행 상태 바꾸기: `adb shell am start -n com.team.pleosapp/.MainActivity --es fakeGate drive` (`park`·`idle`·`drive`)
+- Fake SDK 빌드는 퍼즐마다 6초 뒤 신호를 목표값으로 바꿔 판을 자동으로 풀고, 결과 화면에서 6초 뒤 원래 값으로 되돌립니다(영상 예비용). 끄기: `--ez autoPlay false`
+- 시드를 고정해(debug 빌드) 시작하면 시연 0단계(운전석 24℃, 앰비언트 청록 `#00e5ff`, 풍량 2단, 운전석 점유)와 다른 값을 보여 주고 그대로 시작할지 묻습니다. release 빌드에는 없습니다.
+- 주행 전환 측정 로그: `adb logcat -s F1GATE` (규제 콜백 → 리스너 해제 → S-P 그리기 → 저장 시각)
 
 ## 테스트 환경 및 필요한 설정
 
@@ -27,14 +37,31 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 - 에뮬레이터를 콜드 부팅한 직후 1~2분은 시스템 UI가 안정되지 않아 앱이 종료될 수 있습니다. 잠시 기다린 뒤 실행하세요.
 - SDK 없이 화면만 확인하려면 `gradle.properties`에서 `pleos.useFakeSdk=true`로 바꿔 빌드합니다.
 - 릴리스 서명 키가 없으면(`keystore.properties` 없음) release 빌드는 debug 키로 서명됩니다.
+- 기능 플래그 `pleos.drivingNotice`(기본 `false`): `true`로 빌드할 때만 `MainActivity`에 `distractionOptimized`가 선언됩니다(`app/src/drivingNotice/AndroidManifest.xml`). 이 빌드는 주행·공회전 중 시스템이 앱을 가리지 않으므로, 앱이 모든 화면 대신 "정차하면 이어하기" 한 줄 화면(터치 요소 없음)을 그립니다. 기본 빌드는 선언하지 않습니다.
+
+## 디자인 자원
+- 아이콘: Google Material Symbols Rounded(Apache License 2.0)를 vector drawable로 옮겼고, 핸들·브레이크 페달은 같은 선 굵기로 직접 그렸습니다.
+- 차 이미지(`car_top.webp`): 생성형 이미지 도구로 만든 엠블럼 없는 그림입니다.
+- 서체: Pleos 기준 서체 Asta Sans 가변 서체(`app/src/main/res/font/asta_sans.ttf`, wght 300~800). 출처는 [github.com/google/fonts `ofl/astasans`](https://github.com/google/fonts/tree/main/ofl/astasans)(원본 [42dot/Asta-Sans](https://github.com/42dot/Asta-Sans)), 라이선스는 SIL Open Font License 1.1이며 전문을 `app/src/main/assets/licenses/AstaSans-OFL.txt`로 앱에 함께 넣었습니다.
 
 ## 사용 SDK와 퍼미션
 
+앱은 차량 상태를 **읽기만** 합니다. Vehicle SDK의 어떤 `set*` API(`CONTROL_CAR_*` 퍼미션)도 호출하지 않습니다.
+
 | SDK | 버전 | 사용 API | 퍼미션 |
 |---|---|---|---|
-| Vehicle | 2.3.2 | `EvBattery.registerEvBatteryStateOfCharge` | `pleos.car.permission.CAR_ENERGY` |
-| NaviHelper | 3.0.5 | `NaviHelper.getCurrentLocationInfo` | `pleos.car.permission.NAVI_ROUTE` |
-| AAOS Car API | – | `CarUxRestrictionsManager` (주행 규제) | – |
+| Vehicle | 2.3.2 | `HVAC.checkHvacTemperatureCapabilities`·`registerHvacTemperature`·`getHvacTemperature`, `checkHvacFanSpeedCapabilities`·`registerHvacFanSpeed`·`getHvacFanSpeed`, `checkHvacRecirculationCapabilities`·`registerHvacRecirculationState`·`getHvacRecirculationState` (공조 설정값: 목표 온도·풍량·내외기) | `pleos.car.permission.CAR_CLIMATE` |
+| Vehicle | 2.3.2 | `Light.checkAmbientLightBrightnessColorCapabilities`·`registerAmbientLightBrightnessColorListener`·`getAmbientLightBrightnessColor`, `checkAmbientLightBrightnessCapabilities`·`registerAmbientLightBrightnessListener`·`getAmbientLightBrightness`, `checkReadingLightStateCapabilities`·`registerReadingLightState`·`getCurrentReadingLightState` (실내 조명: 앰비언트 색·밝기, 독서등. 외부 등화는 쓰지 않음) | `pleos.car.permission.CAR_LIGHTS` |
+| Vehicle | 2.3.2 | `SteeringWheel.checkSteeringWheelAngleCapabilities`·`registerSteeringWheelAngle`·`getCurrentSteeringWheelAngle`, `Brake.checkBrakePedalStatusCapabilities`·`registerBrakePedalStatus`·`getCurrentBrakePedalStatus` (정차 중 핸들 각도·브레이크 페달) | `pleos.car.permission.CAR_DRIVE` |
+| Vehicle | 2.3.2 | `Seat.checkSeatOccupancyCapabilities`·`getCurrentSeatOccupancy` (좌석 점유: S1 준비 화면에 들어갈 때 한 번 읽어 참가자 좌석 초기값으로만 쓴다. `registerSeatOccupancy`는 Repository에 구현만 있고 화면은 구독하지 않는다) | `pleos.car.permission.CAR_SEATS` |
+| AAOS Car API | – | `CarUxRestrictionsManager` (주행 규제: 정차일 때만 시작·이어하기, 주행 전환 시 일시정지) | – |
+
+### 알려진 SDK 제약 (Vehicle 2.3.2)
+
+아래 신호는 다른 신호처럼 판이 진행되는 동안만 등록하지 않습니다. 앱이 켜져 있는 동안 한 번만 등록해 함께 쓰고, 판이 멈춘 동안에는 들어온 값을 쓰지 않습니다.
+
+- **독서등:** `Light.unregisterReadingLightState`가 해제 대신 리스너를 다시 등록합니다(소스 `LightImpl.unregisterReadingLightState`). 해제를 부르면 재개할 때마다 리스너가 쌓입니다.
+- **앰비언트 색·밝기:** `PropertyCallback.isEmptyPleosPropertyId`(소스 `PropertyCallback.kt:215-224`)가 속성 이름의 앞부분이 같으면 같은 속성으로 셉니다. 그래서 `INTERIOR_LIGHTS_AMBIENT_BRIGHTNESS`가 `INTERIOR_LIGHTS_AMBIENT_BRIGHTNESS_COLOR` 리스너까지 자기 것으로 셉니다. 색 리스너가 있는 채로 밝기 리스너를 붙이면 차량 서비스 구독을 건너뛰어 밝기 이벤트가 오지 않습니다. 앱은 밝기를 먼저 등록한 뒤 색을 등록하고, 해제하지 않습니다.
 
 ## APK
 

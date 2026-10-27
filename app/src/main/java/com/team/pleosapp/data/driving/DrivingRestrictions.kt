@@ -15,6 +15,12 @@ data class DrivingRestrictions(
     val limitContent: Boolean get() = has(CarUxRestrictions.UX_RESTRICTIONS_LIMIT_CONTENT)
     val limitStringLength: Boolean get() = has(CarUxRestrictions.UX_RESTRICTIONS_LIMIT_STRING_LENGTH)
 
+    /**
+     * 정차 게이트(기획 F1): DO가 필요 없고 규제 비트가 하나도 없을 때만 열린다.
+     * 값을 모르면 [FullyRestricted]로 들어오므로 닫힘이다.
+     */
+    val isParked: Boolean get() = !requiresDistractionOptimization && activeRestrictions == CarUxRestrictions.UX_RESTRICTIONS_BASELINE
+
     private fun has(flag: Int): Boolean = (activeRestrictions and flag) != 0
 
     companion object {

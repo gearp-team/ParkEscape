@@ -6,8 +6,11 @@
         android:required="true" />
 
     <!-- 실제로 호출하는 API의 퍼미션만 선언한다(심사 대상). 바꾸면 README의 퍼미션 표도 갱신. -->
-    <uses-permission android:name="pleos.car.permission.CAR_ENERGY" />
-    <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
+    <!-- 퍼즐 신호(조회만): 공조 설정값 C1~C3, 실내 조명 L1~L3, 핸들·브레이크 D1·B1, 좌석 점유 F3 -->
+    <uses-permission android:name="pleos.car.permission.CAR_CLIMATE" />
+    <uses-permission android:name="pleos.car.permission.CAR_LIGHTS" />
+    <uses-permission android:name="pleos.car.permission.CAR_DRIVE" />
+    <uses-permission android:name="pleos.car.permission.CAR_SEATS" />
 
     <application
         android:name=".PleosApplication"
@@ -20,13 +23,14 @@
             android:name="com.hmg.rotary.ROTARY_SUPPORTED"
             android:value="false" />
 
+        <!--
+            distractionOptimized를 선언하지 않는다(기획 F1: 게임은 정차 중에만). 주행으로 바뀌면 시스템이 앱을 차단 화면으로 덮는다.
+            기능 플래그 pleos.drivingNotice=true로 빌드할 때만 src/drivingNotice/AndroidManifest.xml이 합쳐져 선언된다.
+        -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
-            <!-- 선언하지 않으면 Drive 상태에서 앱을 쓸 수 없다. -->
-            <meta-data
-                android:name="distractionOptimized"
-                android:value="true" />
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

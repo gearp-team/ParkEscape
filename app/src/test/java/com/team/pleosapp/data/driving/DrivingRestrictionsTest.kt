@@ -43,4 +43,13 @@ class DrivingRestrictionsTest {
         assertTrue(restrictions.limitContent)
         assertTrue(restrictions.limitStringLength)
     }
+
+    @Test
+    fun parkedGate_onlyWithoutDoAndBits() {
+        assertTrue(DrivingRestrictions().isParked) // 정차 0x0
+        assertFalse(DrivingRestrictions(true, CarUxRestrictions.UX_RESTRICTIONS_NO_VIDEO or CarUxRestrictions.UX_RESTRICTIONS_NO_SETUP).isParked) // 공회전·주행 0x50
+        assertFalse(DrivingRestrictions(true, CarUxRestrictions.UX_RESTRICTIONS_BASELINE).isParked) // DO만 필요
+        assertFalse(DrivingRestrictions(false, CarUxRestrictions.UX_RESTRICTIONS_NO_VIDEO).isParked) // 비트만 있음
+        assertFalse(DrivingRestrictions.FullyRestricted.isParked) // 값 모름 = 닫힘
+    }
 }
