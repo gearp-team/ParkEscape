@@ -87,6 +87,8 @@
     <string name="play_solved_none">비상 전원 %1$d/%2$d 복구됨</string>
     <string name="play_cipher_table">암호표</string>
     <string name="play_cipher_note">판마다 바뀌어요</string>
+    <string name="play_emulator_ambient_note">에뮬레이터: 차량 설정 앱의 조명 변경은 Virtual Console 창이 열려 있을 때만 반영돼요. 안 되면 Virtual Console의 Convenience → 앰비언트에서 바꾸세요</string>
+    <string name="play_emulator_reading_note">에뮬레이터: 차량 설정 앱의 실내등 변경은 Virtual Console 창이 열려 있을 때만 반영돼요. 안 되면 Virtual Console의 Convenience → 독서등에서 켜고 끄세요</string>
     <string name="play_hint_open">힌트 보기 (%1$d/%2$d)</string>
     <string name="play_hint_more">힌트 하나 더 (%1$d/%2$d)</string>
     <string name="play_hint_done">힌트를 모두 봤어요 (%1$d/%2$d)</string>

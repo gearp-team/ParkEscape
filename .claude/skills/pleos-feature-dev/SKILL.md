@@ -49,7 +49,7 @@ $S/vc.sh park
 - 콜드 부팅 직후에는 SystemUI가 반복해서 죽어 앱이 꺼진다. `emu.sh boot`이 안정화까지 기다리지만, 직접 띄웠다면 `emu.sh settle`을 먼저 실행한다.
 - 앱 로그는 `emu.sh logs`로 본다. Repository들은 `Pleos…Repo` 태그로 오류를 남긴다.
 - 확인이 끝나면 `vc.sh park`로 정차 상태로 되돌린다. 다음 검증이 주행 상태에서 시작하면 결과가 헷갈린다.
-- Virtual Console은 세션을 새로 열 때마다(=`vc.sh` 호출마다) 앰비언트 색을 흰색으로, 풍량 0을 2로 되돌린다. 여러 단계를 이어 가는 시연·리허설은 `vc.sh hold`로 세션을 살려 둔 채 진행하고 끝나면 `vc.sh release`를 실행한다.
+- 에뮬레이터의 조명 신호는 Virtual Console 세션(=`vc.sh` 호출, 또는 열려 있는 VC 브라우저 탭)이 있는 동안에만 차량에 반영된다. 세션 밖에서 차량 설정 앱으로 바꾼 조명은 다음 세션이 시작될 때 적용되고, 그때 앰비언트가 기본 희망값(흰색)으로 바뀌기도 한다. 여러 단계를 이어 가는 시연·리허설은 `vc.sh hold`로 세션을 살려 둔 채 진행하고 끝나면 `vc.sh release`를 실행한다.
 - 앱 데이터는 `adb shell pm clear --user 10 <pkg>`로 지운다(앱 사용자 10). 세로 1단 배치는 `scripts/spike_w1.sh window split`으로 나누고 `window join`으로 되돌린다.
 - 1단(portrait) 배치는 에뮬레이터의 창 분할(3 핑거 스와이프)로 확인하거나, 키트의 폼팩터 테스트 가이드(`pleos-claude-kit/docs/pleos-only/app-test-guide/form-factor-test-guide.md`)를 따른다. 확인하지 못했으면 보고에 "1단 미확인"이라고 쓴다.
 

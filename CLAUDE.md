@@ -88,7 +88,7 @@ adb wait-for-device && until [ "$(adb shell getprop sys.boot_completed | tr -d '
 - 이 에뮬레이터의 주행 규제 설정: 정차 `0x0`, 공회전(D, 0km/h)·주행(D, 40km/h) 모두 `requiresDO=true`에 `0x50`(NO_VIDEO + NO_SETUP), 상태 불명 `0x1ff`. 시속 40km/h에서도 `LIMIT_CONTENT`가 꺼져 있다(키트의 "그외 지역" 규칙). `dumpsys … CarUxRestrictionsManagerService`의 첫 `State:unknown` 블록은 현재 값이 아니라 상태 불명용 설정이다(`emu.sh state`가 현재 상태의 블록만 보여 준다). 다른 지역은 더 엄격하므로 UI는 비트별로 분기한다.
 - 에뮬레이터에는 FusedLocation 서비스(`ai.pleos.playground.service.location.fused`)와 음성 서비스(`ai.pleos.playground.caas`) 패키지가 들어 있다. 실제 동작은 아직 검증하지 않았다.
 - 앱을 설치하면 Gleo 쪽(`[GAA]` 로그)이 사용자 앱의 `schema.json`을 스캔한다. 실제로 Gleo가 앱 액션을 호출하는지는 아직 확인하지 않았다.
-- **Virtual Console은 세션을 새로 열 때마다 앰비언트 색을 `#ffffff`로, 풍량 0을 2로 되돌린다.** `vc.sh` 호출 하나하나가 세션을 연다. 값을 유지해야 하는 시연·리허설은 `vc.sh hold`로 시작하고 `vc.sh release`로 끝낸다.
+- **에뮬레이터의 조명 브리지(`VehicleApiDdsEmu`)는 Virtual Console 세션이 있는 동안에만 돈다.** 세션이 없을 때 차량 설정 앱에서 바꾼 앰비언트·독서등은 실제 값에 반영되지 않고 희망값으로만 남았다가, 다음 세션이 시작될 때 한꺼번에 적용된다. 세션을 열 때 앰비언트가 `#ffffff`로 바뀐 것은 기본 희망값이 적용된 것이다(풍량 0이 2로 바뀐 것도 같은 원인으로 보인다). `vc.sh` 호출 하나하나가 세션을 연다. 값을 유지하거나 설정 앱으로 조명을 바꾸는 시연·리허설은 `vc.sh hold`로 시작하고 `vc.sh release`로 끝낸다. debug 실제 SDK 빌드는 조명 퍼즐 화면에 이 안내를 띄운다.
 - **앱 사용자는 10이다.** `adb shell pm clear <pkg>`로는 앱 데이터가 지워지지 않는다. `pm clear --user 10 <pkg>`를 쓴다. Pleos에서는 HOME 키로 앱이 멈추지 않으므로(onStop 없음), 앱 전환 확인은 차량 설정 앱으로 한다.
 - **SDK 값과 Virtual Console 값의 방향이 다른 신호가 있다(2026-10-26 실측).** 핸들 각도는 부호가 반대다(SDK = −VC). 좌석 점유는 값이 반대로 온다(VC 점유 → SDK false). 그래서 앱은 운전석 기준으로 보정한다. 앰비언트 색은 알파 0x00으로 오고, `getAmbientLightSwitch`는 VC와 무관하게 항상 OFF다. 근거: `_workspace/05_build/spike_w1.md`.
 - **Vehicle 2.3.2 `unregisterReadingLightState`는 해제하지 않고 다시 등록한다**(SDK 소스 `LightImpl.kt`). 독서등 리스너는 앱 수명 동안 한 번만 등록해 공유한다(`PleosCabinLightRepository`).

@@ -33,10 +33,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.team.pleosapp.BuildConfig
 import com.team.pleosapp.R
 import com.team.pleosapp.domain.clue.ClueWriter
 import com.team.pleosapp.domain.puzzle.CipherEntry
 import com.team.pleosapp.domain.puzzle.ClueType
+import com.team.pleosapp.domain.puzzle.SignalId
 import com.team.pleosapp.ui.components.HairLine
 import com.team.pleosapp.ui.components.SecondaryButton
 import com.team.pleosapp.ui.components.formatClock
@@ -88,6 +90,7 @@ private fun WidePlay(play: PlayState, actions: PlayActions) {
         Column(Modifier.weight(1f).fillMaxHeight().padding(start = 56.dp, end = 56.dp, top = 56.dp, bottom = 48.dp)) {
             SignalGauge(play, actions, wide = true)
             clue.settingsNote?.let { InfoNote(it, Modifier.padding(top = 24.dp)) }
+            EmulatorNote(play, Modifier.padding(top = 16.dp))
             Spacer(Modifier.weight(1f))
             HelpCards(play, actions, Modifier.fillMaxWidth())
             HintButton(play, actions, Modifier.fillMaxWidth().padding(top = 20.dp), height = 100)
@@ -109,6 +112,7 @@ private fun NarrowPlay(play: PlayState, actions: PlayActions) {
         Column(Modifier.weight(1f).fillMaxWidth().padding(top = 32.dp, bottom = 24.dp)) {
             SignalGauge(play, actions, wide = false)
             play.clue.settingsNote?.let { InfoNote(it, Modifier.padding(top = 16.dp)) }
+            EmulatorNote(play, Modifier.padding(top = 12.dp))
             Spacer(Modifier.weight(1f))
             HelpCards(play, actions, Modifier.fillMaxWidth())
         }
@@ -323,6 +327,20 @@ fun InfoNote(text: String, modifier: Modifier = Modifier) {
         Icon(painterResource(R.drawable.ic_info), contentDescription = null, tint = PleosColors.TextMuted, modifier = Modifier.size(32.dp))
         Text(text, fontSize = 26.sp, lineHeight = 34.sp, color = PleosColors.TextMuted)
     }
+}
+
+// 에뮬레이터의 조명 브리지는 Virtual Console 세션이 있을 때만 돌아서, 그 밖에는 차량 설정 앱의 조명 변경이 반영되지 않는다. debug 실제 SDK 빌드에서만 안내한다.
+private val SHOW_EMULATOR_NOTES = BuildConfig.DEBUG && !BuildConfig.USE_FAKE_SDK
+
+@Composable
+private fun EmulatorNote(play: PlayState, modifier: Modifier = Modifier) {
+    if (!SHOW_EMULATOR_NOTES) return
+    val note = when (play.puzzle.signal) {
+        SignalId.L1, SignalId.L2 -> R.string.play_emulator_ambient_note
+        SignalId.L3 -> R.string.play_emulator_reading_note
+        else -> return
+    }
+    InfoNote(stringResource(note), modifier)
 }
 
 @Composable
