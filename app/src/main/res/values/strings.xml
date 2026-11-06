@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">PleosApp</string>
-    <string name="game_title">차 방탈출</string>
+    <string name="app_name">P단 탈출</string>
+    <string name="game_title">P단 탈출</string>
 
     <!-- 게이트 상태 -->
     <string name="gate_open">정차 중 · 지금 시작할 수 있어요</string>

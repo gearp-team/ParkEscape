@@ -9,6 +9,8 @@ composeBom = "2025.04.01"
 coroutines = "1.8.1"
 junit = "4.13.2"
 pleosVehicle = "2.3.2"
+# 스파이크(debug 전용): 에뮬레이터에서 ON_DEVICE 음성 합성이 되는지 확인한다.
+pleosTts = "3.3.1"
 # 퍼즐 세션·최고 기록 저장(F2-engine). DataStore 1.1.1은 compileSdk 35·AGP 8.8.2·Kotlin 2.0.0과 맞는다.
 datastore = "1.1.1"
 # Kotlin 2.0.0 플러그인과 함께 검증한 버전(F2-engine). NaviHelper(navi-data)도 1.6.3이라, PT에서 되살려도 맞는다.
@@ -16,6 +18,7 @@ kotlinxSerialization = "1.6.3"
 
 [libraries]
 pleos-vehicle = { group = "ai.pleos.playground", name = "Vehicle", version.ref = "pleosVehicle" }
+pleos-tts = { group = "ai.pleos.playground", name = "TextToSpeech", version.ref = "pleosTts" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }

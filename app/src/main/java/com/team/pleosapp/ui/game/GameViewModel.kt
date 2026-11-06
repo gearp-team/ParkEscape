@@ -602,9 +602,16 @@ class GameViewModel(
         stopListening(null)
         val signals = s.state.board.puzzles.map { it.signal }.toSet()
         signalJob = viewModelScope.launch {
+            var reread = false
             signalsFlow(signals).collect { values ->
                 currentSignals = values
                 handle(s, s.onSignals(values))
+                if (!reread) {
+                    reread = true
+                    // 시작·재개 때의 get과 리스너가 다시 값을 받기 시작하는 사이(약 10~15ms)에 바뀐 조명은 이벤트가 오지 않는다
+                    // (F3 QA MINOR 4). 첫 값을 받은 뒤 한 번 더 읽어 공유 상태를 맞춘다. 읽은 값은 같은 Flow로 들어온다.
+                    launch { rereadLights(signals) }
+                }
             }
         }
         if (tickIntervalMs > 0) {
@@ -616,6 +623,12 @@ class GameViewModel(
             }
         }
         log("listeners registered signals=${signals.sorted()}")
+    }
+
+    private suspend fun rereadLights(signals: Set<SignalId>) {
+        if (SignalId.L1 in signals) light.readAmbientColor()
+        if (SignalId.L2 in signals) light.readAmbientBrightness()
+        if (SignalId.L3 in signals) light.readReadingLights()
     }
 
     private fun stopListening(reason: String?) {

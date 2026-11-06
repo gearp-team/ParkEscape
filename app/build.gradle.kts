@@ -38,6 +38,12 @@ android {
             "Boolean.parseBoolean(\"${providers.gradleProperty("pleos.useFakeSdk").getOrElse("false")}\")",
         )
         buildConfigField("boolean", "DRIVING_NOTICE", "Boolean.parseBoolean(\"$drivingNotice\")")
+        // debug 실제 SDK 빌드의 조명 퍼즐 에뮬레이터 안내(PlayScreen). 시연 영상을 찍을 때만 -Ppleos.emulatorNotes=false로 끈다.
+        buildConfigField(
+            "boolean",
+            "EMULATOR_NOTES",
+            "Boolean.parseBoolean(\"${providers.gradleProperty("pleos.emulatorNotes").getOrElse("true")}\")",
+        )
     }
 
     signingConfigs {
@@ -95,6 +101,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     debugImplementation(libs.androidx.compose.ui.tooling)
+    // debug 전용 SDK 스파이크(SdkSpikeActivity). release APK에는 들어가지 않는다.
+    debugImplementation(libs.pleos.tts)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

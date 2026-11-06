@@ -1,19 +1,28 @@
-# PleosApp
+# P단 탈출 (ParkEscape)
 
-> 한 줄 소개: (작성 예정)
+> 한 줄 소개: 주차·충전·휴식으로 차가 서 있는 5~10분, 공조·실내 조명·핸들·브레이크가 게임 패드가 되어 혼자 또는 가족과 함께 푸는 정차 전용 방탈출 게임.
 
-Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에서 동작하는 차량용 Android 앱입니다.
+Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에서 동작하는 차량용 Android 앱입니다. 현대자동차그룹 차량용 앱 개발 공모전 출품작입니다.
+
+- 기어가 P(정차)일 때만 판이 열립니다. 판마다 퍼즐 조합·순서·목표값·암호표가 바뀝니다(3·5·10분 판).
+- 단서를 풀어 차의 실내 조작부(공조 온도·풍량·내외기, 앰비언트 색·밝기, 독서등, 핸들, 브레이크)를 직접 조작하면, 앱이 Vehicle SDK로 그 값을 읽어 정답을 판정합니다. 앱은 차를 제어하지 않습니다.
+- 좌석 점유로 동승자 자리를 잡고, 그 자리에서만 풀 수 있는 단서(독서등)를 섞어 함께 풉니다.
+- 출발(기어 D)하면 시스템이 앱을 가리는 순간 판을 저장하고 멈춥니다. 다시 정차하면 P 확인을 거쳐 이어합니다. 판이 끝나면 바꾼 설정을 원래대로 돌리도록 체크리스트를 보여 줍니다.
 
 ## 실행 방법
 
-1. Pleos Connect Emulator v2.1.0 AVD를 실행합니다. 설치 방법은 Pleos 개발 문서의 [Pleos Connect Emulator 설치 및 실행](https://document.pleos.ai/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator)을 참고하세요.
-2. 에뮬레이터에 앱을 설치합니다.
-   - 소스에서 빌드: `./gradlew installDebug`
-   - 제출용 APK: `adb install -r apk/TEAM_PleosApp_release.apk`
-3. 앱 라이브러리에서 **PleosApp**을 실행합니다.
-4. 기어가 P(정차)일 때만 판을 시작·이어할 수 있습니다. 판 길이를 고르고 "시작" → 참가 자리 확인 → "기어 P·주차 브레이크를 확인했어요"를 누르면 판이 시작됩니다.
-   - 기어를 D로 바꾸면 시스템이 앱을 "주행 중에는 사용할 수 없습니다." 화면으로 덮고, 앱은 그 순간 판을 저장하고 일시정지합니다. 다시 P로 바꾸면 "이어하기" → P 확인으로 같은 퍼즐부터 이어집니다(저절로 다시 시작하지 않음).
-   - Virtual Console로 기어를 바꾸는 방법은 아래 "테스트 환경"을 참고하세요.
+1. Pleos Connect Emulator v2.1.0 AVD를 **콜드 부팅**으로 실행합니다. 설치 방법은 Pleos 개발 문서의 [Pleos Connect Emulator 설치 및 실행](https://document.pleos.ai/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator)을 참고하세요. 부팅 직후 1~2분은 시스템 UI가 안정되지 않으니 기다립니다.
+2. **Virtual Console을 열어 둡니다.** `adb forward tcp:8088 tcp:8088` 후 브라우저에서 `http://127.0.0.1:8088/`을 열고, 테스트하는 동안 그 탭을 닫지 않습니다. 이 에뮬레이터는 Virtual Console 창(세션)이 열려 있을 때만 공조·조명 값을 차량에 반영하고, 콜드 부팅 뒤 한 번도 열지 않으면 공조 값이 비어 있습니다(아래 "테스트 환경" 참고).
+3. 에뮬레이터에 앱을 설치합니다.
+   - 제출용 APK: `adb install -r apk/GearP_ParkEscape_release.apk`
+   - 소스에서 빌드: `./gradlew installDebug` (release와 서명이 달라 먼저 `adb uninstall com.team.pleosapp`)
+4. 앱 라이브러리에서 **P단 탈출**을 실행합니다.
+5. 기어가 P일 때 판 길이를 고르고 "시작" → 참가 자리 확인 → "기어 P·주차 브레이크를 확인했어요"를 누르면 판이 시작됩니다.
+6. 화면의 단서대로 Virtual Console에서 값을 바꾸면 퍼즐이 풀립니다.
+   - 공조(목표 온도·풍량·내외기): Climate
+   - 앰비언트 색·밝기, 독서등: Convenience
+   - 핸들 각도, 브레이크: Motion
+   - 기어 P/D: Motion. D로 바꾸면 시스템이 앱을 "주행 중에는 사용할 수 없습니다." 화면으로 덮고, 앱은 그 순간 판을 저장하고 일시정지합니다. 다시 P로 바꾸면 "이어하기" → P 확인으로 같은 퍼즐부터 이어집니다(저절로 다시 시작하지 않음).
 
 ### 디버그 빌드 전용 옵션
 - 시연 시드 고정: `adb shell am start -n com.team.pleosapp/.MainActivity --es seed demo5` (신호 풀 8종 고정, 기획 5절 시연 판)
@@ -34,6 +43,8 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 | 에뮬레이터 | Pleos Connect v2.1.0 (Android 14, API 34) |
 
 - 차량 상태는 Pleos Connect Virtual Console에서 바꿀 수 있습니다. `adb forward tcp:8088 tcp:8088` 후 브라우저에서 `http://127.0.0.1:8088/`을 엽니다.
+- **Virtual Console 창을 열어 둔 채 테스트하세요.** 이 에뮬레이터는 Virtual Console 세션이 있는 동안에만 공조·조명 값을 차량에 반영합니다. 세션이 없을 때 차량 설정 앱에서 바꾼 조명은 다음에 창을 열 때 한꺼번에 적용되고, 콜드 부팅 뒤 창을 한 번도 열지 않으면 목표 온도 값이 비어 있습니다(2026-10-27·11-06 실측). 실차와는 무관한 에뮬레이터 동작입니다.
+- 성능(release, 에뮬레이터 실측 2026-11-06): 정차 중 판 진행 CPU 0~1%, 주행 중(일시정지 화면) CPU 0%, 메모리 PSS 약 81MB(RSS 약 173MB). Pleos 기준(주행 중 비내비 앱 CPU 5% 미만, 정차 25% 이하, RAM 400MB 이하) 안입니다.
 - 에뮬레이터를 콜드 부팅한 직후 1~2분은 시스템 UI가 안정되지 않아 앱이 종료될 수 있습니다. 잠시 기다린 뒤 실행하세요.
 - SDK 없이 화면만 확인하려면 `gradle.properties`에서 `pleos.useFakeSdk=true`로 바꿔 빌드합니다.
 - 릴리스 서명 키가 없으면(`keystore.properties` 없음) release 빌드는 debug 키로 서명됩니다.
@@ -47,6 +58,8 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 ## 사용 SDK와 퍼미션
 
 앱은 차량 상태를 **읽기만** 합니다. Vehicle SDK의 어떤 `set*` API(`CONTROL_CAR_*` 퍼미션)도 호출하지 않습니다.
+
+(debug 빌드에만 있는 SDK 확인 화면 `SdkSpikeActivity`는 TextToSpeech와 Vehicle 제어 API가 에뮬레이터에서 동작하는지 시험하려고 `TTS_SERVICE`·`CONTROL_CAR_CLIMATE`·`CONTROL_CAR_LIGHTS`를 debug 매니페스트에만 선언합니다. release APK에는 들어가지 않습니다. 두 기능은 2차 PT 단계 계획입니다.)
 
 | SDK | 버전 | 사용 API | 퍼미션 |
 |---|---|---|---|
@@ -65,4 +78,4 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 
 ## APK
 
-[`apk/TEAM_PleosApp_release.apk`](apk/) — `./gradlew copyReleaseApk`로 생성합니다.
+[`apk/GearP_ParkEscape_release.apk`](apk/GearP_ParkEscape_release.apk) — 실행 가능한 release 빌드입니다. `./gradlew copyReleaseApk`로 다시 만들 수 있습니다(`gradle.properties`의 `pleos.teamName`·`pleos.appName`으로 파일 이름을 정합니다).

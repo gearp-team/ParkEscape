@@ -4,6 +4,11 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- SdkSpikeActivity 전용(debug 빌드에만 병합). release 매니페스트의 퍼미션 4개는 그대로다. -->
+    <uses-permission android:name="pleos.car.permission.TTS_SERVICE" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_CLIMATE" />
+    <uses-permission android:name="pleos.car.permission.CONTROL_CAR_LIGHTS" />
+
     <application>
         <!--
             distractionOptimized를 일부러 선언하지 않는다(주행 중 시스템 차단 화면 동작을 재기 위해).
@@ -22,5 +27,14 @@
             android:name=".spike.DataCheckActivity"
             android:exported="true"
             android:taskAffinity="com.team.pleosapp.datacheck" />
+        <!--
+            SDK 스파이크: TTS(ON_DEVICE)와 Vehicle 제어(set*)가 에뮬레이터에서 되는지 logcat 태그 SDKSPIKE로 남긴다.
+            실행: adb shell am start -n com.team.pleosapp/.spike.SdkSpikeActivity 에 문자열 extra step=caps|tts|hvac|light
+        -->
+        <activity
+            android:name=".spike.SdkSpikeActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="com.team.pleosapp.sdkspike" />
     </application>
 </manifest>

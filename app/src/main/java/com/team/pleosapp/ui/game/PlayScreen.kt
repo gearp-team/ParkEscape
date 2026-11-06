@@ -330,7 +330,7 @@ fun InfoNote(text: String, modifier: Modifier = Modifier) {
 }
 
 // 에뮬레이터의 조명 브리지는 Virtual Console 세션이 있을 때만 돌아서, 그 밖에는 차량 설정 앱의 조명 변경이 반영되지 않는다. debug 실제 SDK 빌드에서만 안내한다.
-private val SHOW_EMULATOR_NOTES = BuildConfig.DEBUG && !BuildConfig.USE_FAKE_SDK
+private val SHOW_EMULATOR_NOTES = BuildConfig.DEBUG && !BuildConfig.USE_FAKE_SDK && BuildConfig.EMULATOR_NOTES
 
 @Composable
 private fun EmulatorNote(play: PlayState, modifier: Modifier = Modifier) {
