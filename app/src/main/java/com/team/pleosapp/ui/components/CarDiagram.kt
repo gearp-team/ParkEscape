@@ -64,11 +64,18 @@ private data class ControlSpot(
     val anchorY: Float,
 )
 
+/*
+ * 한쪽에 원이 셋이다(왼쪽: 전조등·브레이크·핸들, 오른쪽: 앞유리 제상·공조·실내 조명). 전조등·앞유리 제상은 위급할 때 쓰는 조작이라
+ * 차 앞쪽(그림 위)에 둔다(2026-11-06). 원 사이 간격은 원 + 이름 높이(가로 2단 약 0.17, 세로 1단 약 0.29 × 그림 높이)보다 넓게 잡고,
+ * 같은 쪽의 선이 서로 엇갈리지 않게 원 순서를 기준점의 위아래 순서와 맞췄다.
+ */
 private val CONTROL_SPOTS = listOf(
-    ControlSpot(R.drawable.ic_brake_pedal, R.string.control_brake, left = true, bubbleY = 0.171f, bubbleYPortrait = 0.150f, anchorX = 0.288f, anchorY = 0.265f),
-    ControlSpot(R.drawable.ic_steering, R.string.control_steering, left = true, bubbleY = 0.429f, bubbleYPortrait = 0.540f, anchorX = 0.341f, anchorY = 0.310f),
-    ControlSpot(R.drawable.ic_mode_fan, R.string.control_climate, left = false, bubbleY = 0.200f, bubbleYPortrait = 0.200f, anchorX = 0.500f, anchorY = 0.298f),
-    ControlSpot(R.drawable.ic_lightbulb, R.string.control_cabin_light, left = false, bubbleY = 0.557f, bubbleYPortrait = 0.611f, anchorX = 0.500f, anchorY = 0.525f),
+    ControlSpot(R.drawable.ic_headlight, R.string.control_headlight, left = true, bubbleY = 0.110f, bubbleYPortrait = 0.050f, anchorX = 0.200f, anchorY = 0.075f),
+    ControlSpot(R.drawable.ic_brake_pedal, R.string.control_brake, left = true, bubbleY = 0.330f, bubbleYPortrait = 0.370f, anchorX = 0.288f, anchorY = 0.265f),
+    ControlSpot(R.drawable.ic_steering, R.string.control_steering, left = true, bubbleY = 0.550f, bubbleYPortrait = 0.700f, anchorX = 0.341f, anchorY = 0.310f),
+    ControlSpot(R.drawable.ic_defrost, R.string.control_defrost, left = false, bubbleY = 0.110f, bubbleYPortrait = 0.050f, anchorX = 0.500f, anchorY = 0.225f),
+    ControlSpot(R.drawable.ic_mode_fan, R.string.control_climate, left = false, bubbleY = 0.330f, bubbleYPortrait = 0.370f, anchorX = 0.500f, anchorY = 0.298f),
+    ControlSpot(R.drawable.ic_lightbulb, R.string.control_cabin_light, left = false, bubbleY = 0.550f, bubbleYPortrait = 0.700f, anchorX = 0.500f, anchorY = 0.525f),
 )
 
 /** 좌석 위치(이미지 비율): 1열 y 40.6%, 2열 y 64.4%, 왼쪽 x 36.3%, 오른쪽 x 63.7%. */
@@ -102,7 +109,7 @@ private fun CarImage(frame: CarFrame, description: String) {
 }
 
 /**
- * S0 홈: 위에서 본 차와 조작 위치(브레이크·핸들·공조·실내 조명).
+ * S0 홈: 위에서 본 차와 조작 위치(전조등·브레이크·핸들·앞유리 제상·공조·실내 조명).
  * [gap]은 원형 아이콘과 차 이미지 사이 간격(시안: 가로 2단 31, 세로 1단 70).
  */
 @Composable

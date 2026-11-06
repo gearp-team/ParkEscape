@@ -1,10 +1,13 @@
 package com.team.pleosapp.data.climate
 
 import ai.pleos.playground.vehicle.api.model.area.SeatArea
+import ai.pleos.playground.vehicle.api.model.area.WindowArea
 import ai.pleos.playground.vehicle.api.model.capability.AreaBounds
 import ai.pleos.playground.vehicle.api.model.capability.CapabilityConfig
 import ai.pleos.playground.vehicle.api.model.capability.HvacTemperatureConfigArray
+import ai.pleos.playground.vehicle.constant.area.WindowValue
 import ai.pleos.playground.vehicle.constant.unit.TemperatureUnit
+import ai.pleos.playground.vehicle.listener.HvacDefrosterStateListener
 import ai.pleos.playground.vehicle.listener.HvacFanSpeedListener
 import ai.pleos.playground.vehicle.listener.HvacRecirculationStateListener
 import ai.pleos.playground.vehicle.listener.HvacTemperatureListener
@@ -18,13 +21,17 @@ import com.team.pleosapp.data.vehicle.awaitSdk
 import com.team.pleosapp.data.vehicle.describeError
 import com.team.pleosapp.data.vehicle.isReadable
 import com.team.pleosapp.data.vehicle.listenerFlow
+import com.team.pleosapp.data.vehicle.settledListenerFlow
 import com.team.pleosapp.data.vehicle.str
 import com.team.pleosapp.data.vehicle.toSeats
 import com.team.pleosapp.data.vehicle.toValueBounds
 import com.team.pleosapp.data.vehicle.zoneContaining
 import kotlinx.coroutines.flow.Flow
 
-/** Vehicle SDK HVAC 구현. 에뮬레이터: 온도는 좌석별 area(15~30℃), 풍량은 앞좌석 묶음(1~8), 내외기는 5좌석 묶음. */
+/**
+ * Vehicle SDK HVAC 구현. 에뮬레이터: 온도는 좌석별 area(15~30℃), 풍량은 앞좌석 묶음(1~8), 내외기는 5좌석 묶음,
+ * 제상은 창 area(앞유리 FRONT_WINDSHIELD를 포함하는 키를 쓴다).
+ */
 class PleosClimateRepository(connection: VehicleConnection) : ClimateRepository {
     private val hvac by lazy { connection.vehicle.getHVAC() }
 
@@ -35,6 +42,7 @@ class PleosClimateRepository(connection: VehicleConnection) : ClimateRepository 
         val fanArea: SeatArea?,
         val fanBounds: ValueBounds<Int>?,
         val recirculationArea: SeatArea?,
+        val defrosterArea: WindowArea?,
     )
 
     private val cache = CapabilityCache { query() }
@@ -120,9 +128,34 @@ class PleosClimateRepository(connection: VehicleConnection) : ClimateRepository 
             },
         )
 
-        val support = ClimateSupport(temperature, step, fan, recirculation)
-        Log.i(TAG, "support: $support")
-        return Resolved(support, temperatureArea, fanArea, fan.bounds, recirculationArea) to complete
+        var defrosterArea: WindowArea? = null
+        val defroster: SignalCapability<Nothing> = awaitSdk<Pair<CapabilityConfig, List<WindowArea>>> { ok, fail ->
+            hvac.checkHvacDefrosterCapabilities(
+                onComplete = { config: CapabilityConfig, areas: List<WindowArea> -> ok(config to areas) },
+                onFailed = fail,
+            )
+        }.fold(
+            onSuccess = { (config, areas) ->
+                // capability 결과의 키 가운데 앞유리를 덮는 것을 그대로 쓴다(area를 직접 만들지 않는다).
+                val area = areas.firstOrNull { WindowValue.FRONT_WINDSHIELD in it.values }
+                when {
+                    !config.accessType.isReadable() -> SignalCapability.unsupported("access=${config.accessType}")
+                    area == null -> SignalCapability.unsupported("no front windshield area in ${areas.map { it.windowStr() }}")
+                    else -> {
+                        defrosterArea = area
+                        SignalCapability<Nothing>(true)
+                    }
+                }
+            },
+            onFailure = { e ->
+                complete = false
+                SignalCapability.unsupported("capability failed: ${e.describeError()}")
+            },
+        )
+
+        val support = ClimateSupport(temperature, step, fan, recirculation, defroster)
+        Log.i(TAG, "support: $support defrosterArea=${defrosterArea?.windowStr()}")
+        return Resolved(support, temperatureArea, fanArea, fan.bounds, recirculationArea, defrosterArea) to complete
     }
 
     override val targetTemperature: Flow<Float?> = listenerFlow(TAG, "C1 target temperature") { emit, fail ->
@@ -157,6 +190,17 @@ class PleosClimateRepository(connection: VehicleConnection) : ClimateRepository 
         return@listenerFlow { hvac.unregisterHvacRecirculationState(area, listener) }
     }
 
+    // 등록 직후의 낡은 값·잃어버린 첫 값을 피하려고 잠깐 기다린 뒤 get으로 첫 값을 정한다(settledListenerFlow 설명)
+    override val defroster: Flow<Boolean?> = settledListenerFlow(TAG, "C4 defroster", read = ::readDefroster) { emit, fail ->
+        val area = cache.get().defrosterArea ?: return@settledListenerFlow null
+        val listener = object : HvacDefrosterStateListener {
+            override fun onHvacDefrosterStateUpdated(state: Boolean?) = emit(state)
+            override fun onFailed(e: Exception) = fail(e)
+        }
+        hvac.registerHvacDefrosterState(area, listener)
+        return@settledListenerFlow { hvac.unregisterHvacDefrosterState(area, listener) }
+    }
+
     override suspend fun readTargetTemperature(): Float? {
         val area = cache.get().temperatureArea ?: return null
         return awaitSdk<Float?> { ok, fail -> hvac.getHvacTemperature(area, TemperatureUnit.CELSIUS, ok, fail) }
@@ -180,7 +224,16 @@ class PleosClimateRepository(connection: VehicleConnection) : ClimateRepository 
             .getOrNull()
     }
 
+    override suspend fun readDefroster(): Boolean? {
+        val area = cache.get().defrosterArea ?: return null
+        return awaitSdk<Boolean?> { ok, fail -> hvac.getHvacDefrosterState(area, ok, fail) }
+            .onFailure { Log.w(TAG, "C4 read failed: ${it.describeError()}") }
+            .getOrNull()
+    }
+
     private companion object {
         const val TAG = "PleosClimateRepo"
     }
 }
+
+private fun WindowArea.windowStr(): String = values.joinToString("+")

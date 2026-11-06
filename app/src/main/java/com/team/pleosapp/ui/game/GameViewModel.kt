@@ -21,6 +21,7 @@ import com.team.pleosapp.data.settings.SettingsRepository
 import com.team.pleosapp.data.signal.SeatPosition
 import com.team.pleosapp.domain.clue.Clue
 import com.team.pleosapp.domain.clue.ClueWriter
+import com.team.pleosapp.domain.clue.SafetyTips
 import com.team.pleosapp.domain.puzzle.Board
 import com.team.pleosapp.domain.puzzle.BoardLength
 import com.team.pleosapp.domain.puzzle.BrakeProgress
@@ -151,6 +152,9 @@ data class ResultState(
     val restoredCount: Int get() = checklist.count { it.restored }
 }
 
+/** "실제 상황 팁" 카드 한 장(퍼즐이 풀리면 [SafetyTips.SHOW_MS] 동안). */
+data class TipCard(val signal: SignalId, val text: String)
+
 data class GameUiState(
     val screen: Screen = Screen.HOME,
     val gate: GateState = GateState.UNKNOWN,
@@ -170,8 +174,13 @@ data class GameUiState(
     val confirmOverwrite: Boolean = false,
     /** debug 시연 모드로 시작할 때 0단계와 다른 현재값(있으면 그대로 시작할지 묻는다). */
     val demoWarning: List<DemoDiff>? = null,
+    /** 방금 푼 퍼즐의 "실제 상황 팁". 보이는지는 [visibleTip]으로 본다. */
+    val tip: TipCard? = null,
 ) {
     val gateOpen: Boolean get() = gate == GateState.OPEN
+
+    /** 팁 카드는 정차 중 S2 진행·S3 결과 화면에서만 보인다(주행 중에는 띄우지 않는다). */
+    val visibleTip: TipCard? get() = tip?.takeIf { gateOpen && (screen == Screen.PLAYING || screen == Screen.RESULT) }
     val canStart: Boolean get() = gateOpen && selectedLength in availableLengths
     val canResume: Boolean get() = gateOpen && saved != null
 
@@ -228,6 +237,9 @@ class GameViewModel(
     private var resultSession: GameSession? = null
     private var resultJob: Job? = null
 
+    /** 팁 카드를 [SafetyTips.SHOW_MS] 뒤 내리는 작업. */
+    private var tipJob: Job? = null
+
     init {
         viewModelScope.launch { records.bestTimes.collect { best -> _state.update { it.copy(bestTimes = best) } } }
         viewModelScope.launch {
@@ -253,6 +265,7 @@ class GameViewModel(
                 demoWarning = it.demoWarning?.takeIf { open },
             )
         }
+        if (!open) clearTip() // 주행 중에는 팁을 띄우지 않고, 정차로 돌아와도 다시 보이지 않는다
         if (_state.value.screen == Screen.RESULT) {
             // S3도 정차가 아니면 리스너를 해제하고, 정차로 돌아오면 다시 읽어 체크를 갱신한다
             if (open) resumeResult() else stopResultListening("gate closed")
@@ -274,6 +287,7 @@ class GameViewModel(
 
     /** onStop(설정 변경이 아닐 때). 게이트가 열린 채 앱을 떠난 경우다. */
     fun onAppStopped() {
+        clearTip()
         if (_state.value.screen == Screen.RESULT) stopResultListening("app stopped")
         val s = session ?: return
         if (s.status != SessionStatus.PLAYING) return
@@ -316,7 +330,7 @@ class GameViewModel(
         viewModelScope.launch { settingsRepository.setIdleNoticeDismissed(false) }
     }
 
-    /** 디버그 빌드의 고정 시드(시연 모드: 신호 풀 8종 고정). null이면 해제. */
+    /** 디버그 빌드의 고정 시드(시연 모드: 신호 풀 10종 고정). null이면 해제. */
     fun setDebugSeed(seed: String?) {
         _state.update { it.copy(demoSeed = seed) }
         viewModelScope.launch { refreshAvailability() }
@@ -405,6 +419,7 @@ class GameViewModel(
         if (st.screen != Screen.RESULT || !st.gateOpen) return
         stopResultListening("new board")
         resultSession = null
+        clearTip()
         _state.update { it.copy(screen = Screen.HOME, result = null, demoSeed = null) }
         viewModelScope.launch {
             refreshAvailability()
@@ -457,6 +472,7 @@ class GameViewModel(
             stopResultListening("home")
             resultSession = null
         }
+        clearTip()
         _state.update { it.copy(screen = Screen.HOME, ready = null, result = null, saved = session?.let(::summary)) }
         viewModelScope.launch { refreshAvailability() }
     }
@@ -522,6 +538,8 @@ class GameViewModel(
         readingLights = light.readReadingLights(),
         steeringAngle = drive.readSteeringAngle(),
         brakePressed = drive.readBrakePressed(),
+        defroster = climate.readDefroster(),
+        lowBeam = light.readLowBeam(),
     )
 
     /** 자리 단서를 낼 수 있는 좌석(독서등 area가 있는 좌석). 2열 가운데는 선택지에 없다. 시연 모드는 4좌석 모두. */
@@ -567,6 +585,7 @@ class GameViewModel(
         val s = GameSession.start(result.board, participants, snapshot, clock)
         session = s
         hints = -1 to 0 // 새 판은 힌트를 처음부터(앞 판의 같은 번호 퍼즐과 섞이지 않게)
+        clearTip()
         s.confirmParked(gateOpen = true)
         log(
             "start seed=$seed length=${ready.lengthMinutes} participants=${participants.sorted()} " +
@@ -648,9 +667,11 @@ class GameViewModel(
             if (SignalId.C1 in signals) add(climate.targetTemperature.map { v -> { s: VehicleSignals -> s.copy(targetTemperature = v) } })
             if (SignalId.C2 in signals) add(climate.fanSpeed.map { v -> { s: VehicleSignals -> s.copy(fanSpeed = v) } })
             if (SignalId.C3 in signals) add(climate.recirculation.map { v -> { s: VehicleSignals -> s.copy(recirculation = v) } })
+            if (SignalId.C4 in signals) add(climate.defroster.map { v -> { s: VehicleSignals -> s.copy(defroster = v) } })
             if (SignalId.L1 in signals) add(light.ambientColor.map { v -> { s: VehicleSignals -> s.copy(ambientColor = v) } })
             if (SignalId.L2 in signals) add(light.ambientBrightness.map { v -> { s: VehicleSignals -> s.copy(ambientBrightness = v) } })
             if (SignalId.L3 in signals) add(light.readingLights.map { v -> { s: VehicleSignals -> s.copy(readingLights = v) } })
+            if (SignalId.L4 in signals) add(light.lowBeam.map { v -> { s: VehicleSignals -> s.copy(lowBeam = v) } })
             if (SignalId.D1 in signals) add(drive.steeringAngle.map { v -> { s: VehicleSignals -> s.copy(steeringAngle = v) } })
             if (SignalId.B1 in signals) add(drive.brakePressed.map { v -> { s: VehicleSignals -> s.copy(brakePressed = v) } })
         }
@@ -666,16 +687,46 @@ class GameViewModel(
             }
             is SessionEvent.PuzzleSolved -> {
                 save(s, "solved #${event.index}")
+                showTip(s)
                 scheduleAuto(s)
             }
             is SessionEvent.PuzzleSkipped -> {
                 save(s, "skipped #${event.index}")
                 scheduleAuto(s)
             }
-            is SessionEvent.Escaped, SessionEvent.TimedOut -> finish(s)
+            is SessionEvent.Escaped -> {
+                finish(s)
+                showTip(s) // 탈출과 함께 풀린 퍼즐에 팁이 있으면 결과 화면에 띄운다
+            }
+            SessionEvent.TimedOut -> finish(s)
             else -> Unit
         }
         refreshPlay()
+    }
+
+    /**
+     * 방금 풀린 퍼즐에 "실제 상황 팁"이 있으면 [SafetyTips.SHOW_MS] 동안 카드를 띄운다(정차 중에만).
+     * 새 팁은 앞 팁을 바로 바꾼다.
+     */
+    private fun showTip(s: GameSession) {
+        if (!_state.value.gateOpen) return
+        val solved = s.lastSolved
+        if (solved.isEmpty()) return
+        val signal = SafetyTips.solvedTipSignal(s.state.board, solved.first, solved.last + 1, s.state.skippedIndices) ?: return
+        val text = SafetyTips.of(signal) ?: return
+        tipJob?.cancel()
+        _state.update { it.copy(tip = TipCard(signal, text)) }
+        log("tip shown signal=$signal")
+        tipJob = viewModelScope.launch {
+            delay(SafetyTips.SHOW_MS)
+            _state.update { it.copy(tip = null) }
+        }
+    }
+
+    private fun clearTip() {
+        tipJob?.cancel()
+        tipJob = null
+        if (_state.value.tip != null) _state.update { it.copy(tip = null) }
     }
 
     private fun finish(s: GameSession) {
@@ -811,6 +862,7 @@ class GameViewModel(
     override fun onCleared() {
         stopListening(null)
         stopResultListening(null)
+        tipJob?.cancel()
     }
 
     companion object {

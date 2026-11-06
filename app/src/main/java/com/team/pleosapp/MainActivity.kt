@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
 
     /**
      * 디버그 빌드 전용(기획 5절 시연).
-     * - `--es seed demo5`: 시드 고정(시연 모드, 신호 풀 8종 고정)
+     * - `--es seed demo5`: 시드 고정(시연 모드, 신호 풀 10종 고정). `demo-safety`는 전조등·핸들·앰비언트 색·앞유리 제상·브레이크 5분 판
      * - `--es fakeGate park|idle|drive`: Fake SDK 빌드에서 주행 상태를 바꾼다(Virtual Console 대신)
      * - `--ez autoPlay false`: Fake SDK 빌드의 자동 풀이(퍼즐마다 6초 뒤)를 끈다
      */

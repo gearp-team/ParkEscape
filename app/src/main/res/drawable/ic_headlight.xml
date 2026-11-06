@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 전조등 하향등(직접 그림): 오른쪽 등 모양 + 왼쪽 아래로 기운 빛줄기 넷(계기판 하향등 표시와 같은 모양). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M13,6 C18.6,6 21.2,8.6 21.2,12 C21.2,15.4 18.6,18 13,18 Z"
+        android:strokeWidth="2"
+        android:strokeColor="#FF000000"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M10.4,7.4 L3.4,9.6 M10.4,10.6 L3.4,12.8 M10.4,13.8 L3.4,16 M10.4,17 L3.4,19.2"
+        android:strokeWidth="1.9"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round" />
+</vector>

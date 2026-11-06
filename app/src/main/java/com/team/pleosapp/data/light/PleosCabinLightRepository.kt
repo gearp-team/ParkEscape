@@ -16,6 +16,7 @@ import com.team.pleosapp.data.vehicle.awaitSdk
 import com.team.pleosapp.data.vehicle.describe
 import com.team.pleosapp.data.vehicle.describeError
 import com.team.pleosapp.data.vehicle.isReadable
+import com.team.pleosapp.data.vehicle.settledListenerFlow
 import com.team.pleosapp.data.vehicle.singleSeatZones
 import com.team.pleosapp.data.vehicle.str
 import com.team.pleosapp.data.vehicle.toSeats
@@ -31,7 +32,10 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** Vehicle SDK Light 구현. 에뮬레이터: 앰비언트 색·밝기는 5좌석 묶음 area, 독서등은 좌석별 area 4개(READ 전용). */
+/**
+ * Vehicle SDK Light 구현. 에뮬레이터: 앰비언트 색·밝기는 5좌석 묶음 area, 독서등은 좌석별 area 4개(READ 전용),
+ * 전조등(하향등)은 전역 신호.
+ */
 class PleosCabinLightRepository(connection: VehicleConnection) : CabinLightRepository {
     private val light by lazy { connection.vehicle.getLight() }
 
@@ -40,6 +44,7 @@ class PleosCabinLightRepository(connection: VehicleConnection) : CabinLightRepos
         val colorArea: SeatArea?,
         val brightnessArea: SeatArea?,
         val readingLightAreas: Map<SeatPosition, SeatArea>,
+        val lowBeamSupported: Boolean,
     )
 
     private val cache = CapabilityCache { query() }
@@ -124,9 +129,29 @@ class PleosCabinLightRepository(connection: VehicleConnection) : CabinLightRepos
             },
         )
 
-        val support = CabinLightSupport(color, brightness, reading)
+        val lowBeam: SignalCapability<Nothing> = awaitSdk<Pair<CapabilityConfig, List<LightState>>> { ok, fail ->
+            light.checkLowBeamLightStateCapabilities(
+                onComplete = { config: CapabilityConfig, states: List<LightState> -> ok(config to states) },
+                onFailed = fail,
+            )
+        }.fold(
+            onSuccess = { (config, states) ->
+                when {
+                    !config.accessType.isReadable() -> SignalCapability.unsupported("access=${config.accessType}")
+                    // 켜짐을 알려 줄 수 없는 차량은 판정할 수 없다(목록이 비어 있으면 제한 없음으로 본다)
+                    states.isNotEmpty() && LightState.ON !in states -> SignalCapability.unsupported("states=$states")
+                    else -> SignalCapability<Nothing>(true)
+                }
+            },
+            onFailure = { e ->
+                complete = false
+                SignalCapability.unsupported("capability failed: ${e.describeError()}")
+            },
+        )
+
+        val support = CabinLightSupport(color, brightness, reading, lowBeam)
         Log.i(TAG, "support: $support")
-        return Resolved(support, colorArea, brightnessArea, readingAreas) to complete
+        return Resolved(support, colorArea, brightnessArea, readingAreas, lowBeam.supported) to complete
     }
 
     /*
@@ -270,6 +295,31 @@ class PleosCabinLightRepository(connection: VehicleConnection) : CabinLightRepos
         emitAll(readingState.filterNotNull())
     }
 
+    /*
+     * 전조등(L4)은 다른 신호처럼 PLAYING 동안만 등록하고 해제한다. Vehicle 2.3.2 LightImpl의 register/unregisterLowBeamLightState는
+     * addListener/removeListener를 짝으로 부르고(독서등 같은 해제 결함 없음), 속성 이름 LOW_BEAM_LIGHTS_STATE로 시작하는 다른 속성이 없어
+     * PropertyCallback의 이름 앞부분 일치 결함(앰비언트)에도 걸리지 않는다.
+     * 다만 등록 직후 차량 서비스가 예전 값(켜짐)을 먼저 보내는 것을 에뮬레이터에서 확인해서, 잠깐 기다린 뒤 get으로 첫 값을 정한다
+     * (settledListenerFlow 설명. 그대로 쓰면 전조등 퍼즐이 판 시작과 동시에 풀렸다).
+     */
+    override val lowBeam: Flow<Boolean?> = settledListenerFlow(TAG, "L4 low beam", read = ::readLowBeam) { emit, fail ->
+        if (!cache.get().lowBeamSupported) return@settledListenerFlow null
+        val listener = object : LightStateListener {
+            override fun onLightStateUpdated(state: LightState?) = emit(state.isLowBeamOn())
+            override fun onFailed(e: Exception) = fail(e)
+        }
+        light.registerLowBeamLightState(listener)
+        return@settledListenerFlow { light.unregisterLowBeamLightState(listener) }
+    }
+
+    override suspend fun readLowBeam(): Boolean? {
+        if (!cache.get().lowBeamSupported) return null
+        return awaitSdk<LightState?> { ok, fail -> light.getCurrentLowBeamLightState(ok, fail) }
+            .onFailure { Log.w(TAG, "L4 read failed: ${it.describeError()}") }
+            .getOrNull()
+            .isLowBeamOn()
+    }
+
     override suspend fun readAmbientColor(): Int? {
         val area = cache.get().colorArea ?: return null
         val result = awaitSdk<Int?> { ok, fail -> light.getAmbientLightBrightnessColor(area, ok, fail) }
@@ -303,6 +353,13 @@ class PleosCabinLightRepository(connection: VehicleConnection) : CabinLightRepos
     private companion object {
         const val TAG = "PleosCabinLightRepo"
     }
+}
+
+/** 전조등: ON → true, OFF·DAYTIME_RUNNING(주간주행등만 켜짐) → false, 값 없음 → null. */
+private fun LightState?.isLowBeamOn(): Boolean? = when (this) {
+    LightState.ON -> true
+    LightState.OFF, LightState.DAYTIME_RUNNING -> false
+    null -> null
 }
 
 /** ON → true, OFF → false. 그 밖(DAYTIME_RUNNING, null)은 독서등 판정에 쓸 수 없어 null. */

@@ -40,6 +40,8 @@ class FakeAutoPlayer(
             is Target.AmbientColor -> light.setAmbientColor(argbOf(t.color))
             is Target.Brightness -> light.setAmbientBrightness(t.level)
             is Target.ReadingLight -> light.setReadingLight(t.seat, true)
+            is Target.Defroster -> climate.setDefroster(t.on)
+            is Target.LowBeam -> light.setLowBeam(t.on)
             is Target.Steering -> {
                 val range = SteeringZones.binRange(t.side, t.bin, t.boundsMin, t.boundsMax)
                 drive.setSteeringAngle((range.start + range.endInclusive) / 2f)
@@ -64,6 +66,8 @@ class FakeAutoPlayer(
         snapshot.ambientColor?.let(light::setAmbientColor)
         snapshot.ambientBrightness?.let(light::setAmbientBrightness)
         snapshot.readingLights.forEach { (seat, on) -> if (on != null) light.setReadingLight(seat, on) }
+        snapshot.defroster?.let(climate::setDefroster)
+        snapshot.lowBeam?.let(light::setLowBeam)
         drive.setSteeringAngle(0f)
     }
 

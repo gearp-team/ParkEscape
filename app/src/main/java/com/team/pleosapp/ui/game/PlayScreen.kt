@@ -172,6 +172,7 @@ private fun Timer(remainingMs: Long, fontSize: Int, iconSize: Int) {
 private val TERMS = listOf(
     "조타 구간 번호", "냉각 코일 온도", "환기 팬 단수", "퍼즐 답", "조명 출력", "냉각 코일", "환기 팬", "비상 조명", "조타 키", "격벽 상태",
     "해치 봉인", "계통 색", "2열 오른쪽", "2열 왼쪽", "왼쪽 1번", "왼쪽 2번", "왼쪽 3번", "오른쪽 1번", "오른쪽 2번", "오른쪽 3번",
+    "시야 확보 장치", "외부 표지등", "앞유리 제상",
 )
 
 private fun keepTerms(text: String): String = TERMS.fold(text) { acc, term -> acc.replace(term, term.replace(' ', '\u00A0')) }

@@ -7,7 +7,7 @@ import kotlin.math.abs
 internal object Fixtures {
     val POOL = SignalPool.EMULATOR
 
-    /** 시연 0단계: 운전석 24℃, 풍량 2, 외기, 앰비언트 Cyan(알파 0x00), 밝기 100, 독서등 모두 꺼짐, 핸들 중앙, 브레이크 뗌 */
+    /** 시연 0단계: 운전석 24℃, 풍량 2, 외기, 앰비언트 Cyan(알파 0x00), 밝기 100, 독서등 모두 꺼짐, 핸들 중앙, 브레이크 뗌, 제상·전조등 꺼짐 */
     val CURRENT = VehicleSignals(
         targetTemperature = 24f,
         fanSpeed = 2,
@@ -22,6 +22,8 @@ internal object Fixtures {
         ),
         steeringAngle = 0f,
         brakePressed = false,
+        defroster = false,
+        lowBeam = false,
     )
 
     val DRIVER_AND_REAR_RIGHT = setOf(SeatPosition.DRIVER, SeatPosition.REAR_RIGHT)
@@ -52,6 +54,8 @@ internal object Fixtures {
                 is Target.Brightness -> signals.copy(ambientBrightness = t.level)
                 is Target.ReadingLight -> signals.copy(readingLights = signals.readingLights + (t.seat to true))
                 is Target.Steering -> signals.copy(steeringAngle = 0f)
+                is Target.Defroster -> signals.copy(defroster = t.on)
+                is Target.LowBeam -> signals.copy(lowBeam = t.on)
                 else -> signals
             }
             puzzle to before

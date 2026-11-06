@@ -131,6 +131,14 @@ class PuzzleGeneratorTest {
                         is Target.Recirculation -> assertEquals(label, !before.recirculation!!, t.on)
                         is Target.AmbientColor -> assertFalse(label, ColorRule.matches(before.ambientColor!!, t.color))
                         is Target.ReadingLight -> assertEquals(label, false, before.readingLights[t.seat])
+                        is Target.Defroster -> {
+                            assertTrue(label, t.on)
+                            assertEquals(label, false, before.defroster)
+                        }
+                        is Target.LowBeam -> {
+                            assertTrue(label, t.on)
+                            assertEquals(label, false, before.lowBeam)
+                        }
                         is Target.Steering -> {
                             assertTrue(label, t.bin in 1..3)
                             assertEquals(label, -470f, t.boundsMin)
@@ -182,6 +190,8 @@ class PuzzleGeneratorTest {
                     is Target.AmbientColor -> CipherMeaning.Color(t.color)
                     is Target.ReadingLight -> CipherMeaning.Seat(t.seat)
                     is Target.Steering -> CipherMeaning.Steering(t.side, t.bin)
+                    is Target.Defroster -> CipherMeaning.Switch(t.on)
+                    is Target.LowBeam -> CipherMeaning.Switch(t.on)
                     else -> error("unexpected cipher target")
                 }
                 assertEquals(seed, expected, meaning)
@@ -265,8 +275,8 @@ class PuzzleGeneratorTest {
 
     @Test
     fun fullPoolSoloDriver_allLengths_withRepeatsAtMostTwice() {
-        // 비EV 공조 2 + L1·L2 각 2 + D1 1 = 7 + 봉인 = 8
-        assertEquals(8, PuzzleGenerator.maxPuzzleCount(driverOnly, POOL, CURRENT))
+        // 비EV 공조 2(C4 포함) + L1·L2 각 2 + L4 1 + D1 1 = 8 + 봉인 = 9
+        assertEquals(9, PuzzleGenerator.maxPuzzleCount(driverOnly, POOL, CURRENT))
         assertEquals(BoardLength.entries.toSet(), PuzzleGenerator.availableLengths(driverOnly, POOL, CURRENT))
         for (seed in seeds) {
             val b = board(input(seed, 10, driverOnly))
@@ -519,8 +529,9 @@ class PuzzleGeneratorTest {
 
     @Test
     fun goldenBoard_fixedInputGivesFixedBoard() {
-        // 알고리즘·상수가 바뀌면 이 판이 바뀐다(같은 시드 = 같은 판 보장 확인용)
-        val b = board(input("abc", 5))
+        // 알고리즘·상수가 바뀌면 이 판이 바뀐다(같은 시드 = 같은 판 보장 확인용).
+        // 제상·전조등 현재값을 모르면(C4·L4 제외) 두 신호를 넣기 전과 같은 판이 나와야 한다.
+        val b = board(input("abc", 5, current = CURRENT.copy(defroster = null, lowBeam = null)))
         assertEquals(
             listOf(
                 Puzzle(0, SignalId.D1, ClueType.DIRECT, Target.Steering(SteeringSide.RIGHT, 3, -470f, 500f)),

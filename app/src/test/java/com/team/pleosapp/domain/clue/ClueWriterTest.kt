@@ -181,6 +181,8 @@ class ClueWriterTest {
             SignalId.L1 -> Target.AmbientColor(NamedColor.GREEN)
             SignalId.L2 -> Target.Brightness(20)
             SignalId.L3 -> Target.ReadingLight(SeatPosition.REAR_LEFT)
+            SignalId.C4 -> Target.Defroster(true)
+            SignalId.L4 -> Target.LowBeam(true)
             SignalId.D1 -> Target.Steering(SteeringSide.RIGHT, 3, -470f, 500f)
             SignalId.B1 -> error("unreachable")
         }

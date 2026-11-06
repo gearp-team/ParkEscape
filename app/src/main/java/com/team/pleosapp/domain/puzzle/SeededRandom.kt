@@ -51,6 +51,9 @@ object Seeds {
     /** 시연 시드(기획 5절). 디버그 빌드에서 인텐트 extra `seed`로 넣는다. */
     const val DEMO = "demo5"
 
+    /** 위급 조작 시연 시드(전조등·핸들·앰비언트 색·앞유리 제상·브레이크 5분 판). 디버그 빌드에서 `--es seed demo-safety`. */
+    const val DEMO_SAFETY = "demo-safety"
+
     /** 시드 문자열 → 64비트(FNV-1a). */
     fun hash(seed: String): Long {
         var h = -0x340d631b7bdddcdbL // 0xCBF29CE484222325

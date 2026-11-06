@@ -13,7 +13,8 @@ data class DemoDiff(val item: String, val current: String, val expected: String)
 
 /**
  * debug 시연 모드(시드 고정)로 시작할 때 시연 대본 5-1의 0단계와 다른 현재값을 찾는다(F2-ui 리더 결정).
- * 대상: 운전석 온도 24℃, 앰비언트 Cyan(#00E5FF, RGB만), 풍량 2단, 좌석 점유(운전석만, 2단계에서 2열 오른쪽).
+ * 대상: 운전석 온도 24℃, 앰비언트 Cyan(#00E5FF, RGB만), 풍량 2단, 앞유리 제상 꺼짐, 전조등 꺼짐,
+ * 좌석 점유(운전석만, 2단계에서 2열 오른쪽).
  *
  * 운전석 점유는 직접 읽을 수 없다(데이터 계층이 운전석을 기준으로 극성을 보정하므로 보정값의 운전석은 늘 점유다).
  * 조수석·2열 왼쪽이 점유로 보이면 다르다고 본다: VC에서 운전석을 비워 극성이 반대로 잡힌 경우(에뮬레이터 실측)와
@@ -35,6 +36,8 @@ object DemoStageCheck {
         }
         val fan = signals.fanSpeed
         if (fan != FAN_SPEED) add(DemoDiff("풍량", fan?.let { "${it}단" } ?: "확인 안 됨(꺼짐 포함)", "2단"))
+        if (signals.defroster != false) add(DemoDiff("앞유리 제상", switchText(signals.defroster), "꺼짐"))
+        if (signals.lowBeam != false) add(DemoDiff("전조등", switchText(signals.lowBeam), "꺼짐(VC Off)"))
         val corrected = occupancy.corrected
         val extraSeats = listOf(SeatPosition.PASSENGER, SeatPosition.REAR_LEFT).filter { corrected[it] == true }
         if (!occupancy.polarityKnown || extraSeats.isNotEmpty()) {
@@ -46,4 +49,6 @@ object DemoStageCheck {
             add(DemoDiff("좌석 점유", now, "운전석만(VC 운전석 점유, 나머지 비움)"))
         }
     }
+
+    private fun switchText(on: Boolean?): String = on?.let(ClueWriter::switchName) ?: "확인 안 됨"
 }

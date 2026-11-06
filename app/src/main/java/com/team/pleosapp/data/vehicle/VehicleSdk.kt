@@ -11,6 +11,7 @@ import com.team.pleosapp.data.signal.SeatPosition
 import com.team.pleosapp.data.signal.ValueBounds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -81,6 +82,49 @@ internal fun <T> listenerFlow(
     if (unsubscribe == null) trySend(null)
     awaitClose { unsubscribe?.invoke() }
 }
+
+/** [settledListenerFlow]가 등록 직후 콜백을 버리는 시간(ms). */
+internal const val REGISTER_SETTLE_MS = 300L
+
+/**
+ * [listenerFlow]와 같지만, 등록 직후 [settleMs] 동안 오는 콜백은 버리고 그 뒤 [read](get)로 읽은 현재 값을 첫 값으로 내보낸다.
+ * 그다음부터는 콜백을 그대로 내보낸다. 켜짐/꺼짐처럼 값이 자주 바뀌지 않는 신호(C4 제상, L4 전조등)에 쓴다.
+ *
+ * 에뮬레이터 실측(2026-11-06): 구독하지 않는 동안 값이 바뀌었으면 차량 서비스가 등록 직후 예전 값(예: 전조등 켜짐)을 먼저 보내고
+ * 몇 ms 뒤 현재 값(꺼짐)을 보낸다. 그대로 쓰면 판이 시작하자마자 퍼즐이 풀린다. 또 등록 직후의 첫 값이 리스너가 맵에 들어가기 전에
+ * 도착해 사라지면(독서등과 같은 SDK 순서 문제) 다음 변화까지 값이 없어서, 신호를 묶는 combine이 아무것도 내보내지 않았다.
+ */
+internal fun <T> settledListenerFlow(
+    tag: String,
+    name: String,
+    read: suspend () -> T?,
+    settleMs: Long = REGISTER_SETTLE_MS,
+    debugLog: (String) -> Unit = { Log.d(tag, it) },
+    subscribe: suspend (emit: (T?) -> Unit, fail: (Exception) -> Unit) -> (() -> Unit)?,
+): Flow<T?> = callbackFlow {
+    val open = AtomicBoolean(false)
+    val fail: (Exception) -> Unit = { e ->
+        Log.w(tag, "$name failed: ${e.describe()}")
+        trySend(null)
+    }
+    val unsubscribe = try {
+        subscribe({ value -> if (open.get()) trySend(value) else debugLog("$name dropped early callback v=$value") }, fail)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        fail(e)
+        return@callbackFlow awaitClose()
+    }
+    if (unsubscribe == null) {
+        trySend(null)
+        return@callbackFlow awaitClose()
+    }
+    delay(settleMs)
+    val current = read()
+    open.set(true)
+    trySend(current)
+    awaitClose { unsubscribe() }
+}.distinctUntilChanged()
 
 /**
  * 좌석별 리스너 여러 개를 좌석 → 값 맵 하나의 Flow로 묶는다(독서등, 좌석 점유).

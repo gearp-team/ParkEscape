@@ -8,13 +8,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
 /**
- * SDK 없이 쓰는 실내 조명. 기본값은 시연 0단계 초기값(기획 5-1: 앰비언트 Cyan `#00e5ff`, 밝기 100, 독서등 모두 꺼짐)이고,
+ * SDK 없이 쓰는 조명. 기본값은 시연 0단계 초기값(기획 5-1: 앰비언트 Cyan `#00e5ff`, 밝기 100, 독서등 모두 꺼짐, 전조등 꺼짐)이고,
  * 지원 범위는 에뮬레이터 실측값(밝기 0~100, 독서등 1열·2열 좌우 4좌석)이다. 값은 setter로 바꾼다.
  */
 class FakeCabinLightRepository(
     ambientColor: Int? = CYAN,
     ambientBrightness: Int? = 100,
     readingLights: Map<SeatPosition, Boolean?> = READING_SEATS.associateWith { false },
+    lowBeam: Boolean? = false,
     private val support: CabinLightSupport = DEFAULT_SUPPORT,
 ) : CabinLightRepository {
     // 리스너로 전달되는 값(Flow). 실제 차 값은 아래 vehicle*에 둔다.
@@ -24,6 +25,9 @@ class FakeCabinLightRepository(
     private var vehicleColor = ambientColor
     private var vehicleBrightness = ambientBrightness
     private var vehicleReading = readingLights
+
+    // 전조등은 다른 신호처럼 등록·해제하므로(공유 등록 아님) dropEvents와 무관하게 바로 내보낸다.
+    private val lowBeamState = MutableStateFlow(lowBeam)
 
     /**
      * true면 차 값은 바뀌어도 리스너 이벤트를 보내지 않는다(F3 QA 실패 1 재현: 판이 멈춘 동안 차량 서비스가 독서등·앰비언트
@@ -36,6 +40,7 @@ class FakeCabinLightRepository(
     override val ambientColor: Flow<Int?> = colorState.map { it?.let(::opaqueArgb) }
     override val ambientBrightness: Flow<Int?> = brightnessState
     override val readingLights: Flow<Map<SeatPosition, Boolean?>> = readingState
+    override val lowBeam: Flow<Boolean?> = lowBeamState
 
     override suspend fun readAmbientColor(): Int? {
         colorState.value = vehicleColor
@@ -51,6 +56,8 @@ class FakeCabinLightRepository(
         readingState.value = vehicleReading
         return vehicleReading
     }
+
+    override suspend fun readLowBeam(): Boolean? = lowBeamState.value
 
     /** SDK처럼 알파 0x00인 값을 넣어도 된다(내보낼 때 불투명으로 바꾼다). */
     fun setAmbientColor(argb: Int?) {
@@ -68,8 +75,14 @@ class FakeCabinLightRepository(
         if (!dropEvents) readingState.value = vehicleReading
     }
 
+    fun setLowBeam(on: Boolean?) {
+        lowBeamState.value = on
+    }
+
     /** 지금 값을 구독 중인 수집자 수(리스너 해제 확인용). */
-    val activeCollectors: Int get() = colorState.subscriptionCount.value + brightnessState.subscriptionCount.value + readingState.subscriptionCount.value
+    val activeCollectors: Int
+        get() = colorState.subscriptionCount.value + brightnessState.subscriptionCount.value +
+            readingState.subscriptionCount.value + lowBeamState.subscriptionCount.value
 
     companion object {
         /** 에뮬레이터 기본 앰비언트 색 Cyan `#00e5ff`(SDK 형식, 알파 0x00). */
@@ -89,6 +102,7 @@ class FakeCabinLightRepository(
             ambientColor = SignalCapability(true, listOf(SeatPosition.entries.toSet())),
             ambientBrightness = SignalCapability(true, listOf(SeatPosition.entries.toSet()), ValueBounds(0, 100)),
             readingLight = SignalCapability(true, READING_SEATS.map { setOf(it) }),
+            lowBeam = SignalCapability(true),
         )
     }
 }

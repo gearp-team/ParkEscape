@@ -253,13 +253,14 @@ class GameViewModelTest {
         assertTrue(vm.state.value.supportLoaded)
         assertEquals(BoardLength.entries.toSet(), vm.state.value.availableLengths)
 
-        // 공조 3종 + 브레이크만(비EV) → 3분만
+        // 공조 4종(C1·C2·C3·C4) + 브레이크만(비EV) → 공조 2 + 봉인 = 3분만
         val climateOnly = GameViewModel(
             climate,
             FakeCabinLightRepository(support = FakeCabinLightRepository.DEFAULT_SUPPORT.copy(
                 ambientColor = SignalCapability.unsupported("x"),
                 ambientBrightness = SignalCapability.unsupported("x"),
                 readingLight = SignalCapability.unsupported("x"),
+                lowBeam = SignalCapability.unsupported("x"),
             )),
             FakeDriveInputRepository(support = FakeDriveInputRepository.DEFAULT_SUPPORT.copy(steeringAngle = SignalCapability.unsupported("x"))),
             seats, records, FakeSettingsRepository(), clock, tickIntervalMs = 0,
@@ -269,7 +270,7 @@ class GameViewModelTest {
         climateOnly.selectLength(BoardLength.TEN)
         assertEquals(BoardLength.THREE, climateOnly.state.value.selectedLength)
 
-        climateOnly.setEv(true) // EV: 공조 종류당 2 → 3·5분
+        climateOnly.setEv(true) // EV: C3·C4는 같은 판 금지 → C1·C2·C3 각 2 = 6 + 봉인 = 7 → 3·5분
         assertEquals(setOf(BoardLength.THREE, BoardLength.FIVE), climateOnly.state.value.availableLengths)
     }
 

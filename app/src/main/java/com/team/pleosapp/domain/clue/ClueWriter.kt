@@ -86,6 +86,8 @@ object ClueWriter {
         SignalId.L1 -> "비상 조명"
         SignalId.L2 -> "조명 출력"
         SignalId.L3 -> "승무원 신호"
+        SignalId.C4 -> "시야 확보 장치"
+        SignalId.L4 -> "외부 표지등"
         SignalId.D1 -> "조타 키"
         SignalId.B1 -> "탈출 해치"
     }
@@ -107,6 +109,8 @@ object ClueWriter {
         }
         is Target.ReadingLight -> "${seatName(t.seat)} 승무원: 독서등으로 신호"
         is Target.Steering -> "조타 키를 ${steeringName(t.side, t.bin)} 구간에 맞추고 중앙으로"
+        is Target.Defroster -> "시야 확보 장치를 ${if (t.on) "켜라" else "꺼라"}: 앞유리 제상"
+        is Target.LowBeam -> "외부 표지등을 ${if (t.on) "켜라" else "꺼라"}: 전조등"
         is Target.BrakePresses, Target.SealButton -> sealText(t)
     }
 
@@ -120,6 +124,8 @@ object ClueWriter {
             is Target.Brightness -> "조명 출력 = $g"
             is Target.ReadingLight -> "$g 자리 승무원: 독서등으로 신호"
             is Target.Steering -> "조타 키를 $g 구간에 맞추고 중앙으로"
+            is Target.Defroster -> "시야 확보 장치를 $g 상태로: 앞유리 제상"
+            is Target.LowBeam -> "외부 표지등을 $g 상태로: 전조등"
             is Target.BrakePresses, Target.SealButton -> sealText(puzzle.target)
         }
     }
@@ -181,6 +187,8 @@ object ClueWriter {
             SignalId.L1 -> "비상 조명은 실내 앰비언트 조명이에요"
             SignalId.L2 -> "조명 출력은 실내 앰비언트 조명 밝기예요"
             SignalId.L3 -> "그 자리 독서등을 켜면 신호가 가요"
+            SignalId.C4 -> "시야 확보 장치는 앞유리 김 서림을 없애는 제상 버튼이에요"
+            SignalId.L4 -> "외부 표지등은 전조등(하향등)이에요. 상향등은 켜지 않아요"
             SignalId.D1 -> "조타 키는 핸들이에요. 칸에 1초 머문 뒤 가운데로 돌려요"
             SignalId.B1 -> "브레이크를 끝까지 떼었다가 밟아야 한 번으로 세요"
         }
@@ -196,6 +204,8 @@ object ClueWriter {
             val seat = (puzzle.target as? Target.ReadingLight)?.seat
             if (type == ClueType.DIRECT && seat != null) "${seatName(seat)} 머리 위 독서등 버튼이에요" else "자리마다 머리 위에 독서등 버튼이 있어요"
         }
+        SignalId.C4 -> "공조 바의 앞유리 제상 버튼(물결 화살표 그림)이에요"
+        SignalId.L4 -> "핸들 왼쪽 레버 끝을 돌려 전조등 표시에 맞춰요"
         SignalId.D1 -> "핸들을 살짝 돌리면 바늘이 움직여요. 칸 안에서 1초 기다려요"
         SignalId.B1 -> if (puzzle.target is Target.BrakePresses) "누름 사이는 8초를 넘기지 마세요" else "화면 가운데 버튼이에요"
     }
@@ -211,6 +221,8 @@ object ClueWriter {
         is Target.Brightness -> "조명 출력 ${t.level}"
         is Target.ReadingLight -> "${seatName(t.seat)} 신호"
         is Target.Steering -> "조타 키 ${steeringName(t.side, t.bin)}"
+        is Target.Defroster -> "시야 확보 장치 ${switchName(t.on)}"
+        is Target.LowBeam -> "외부 표지등 ${switchName(t.on)}"
         is Target.BrakePresses, Target.SealButton -> "해치 봉인 해제"
     }
 
@@ -231,7 +243,10 @@ object ClueWriter {
         is CipherMeaning.Steering -> steeringName(meaning.side, meaning.bin)
         is CipherMeaning.Recirculation -> if (meaning.on) "닫힘" else "열림"
         is CipherMeaning.Number -> meaning.value.toString()
+        is CipherMeaning.Switch -> switchName(meaning.on)
     }
+
+    fun switchName(on: Boolean): String = if (on) "켜짐" else "꺼짐"
 
     fun seatName(seat: SeatPosition): String = when (seat) {
         SeatPosition.DRIVER -> "운전석"

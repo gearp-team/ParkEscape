@@ -104,6 +104,13 @@ class GameSession private constructor(initial: SessionState, private val clock: 
 
     val judgeState: JudgeState? get() = judge?.current
 
+    /**
+     * 마지막 판정으로 풀린 퍼즐 번호들([SessionEvent.PuzzleSolved]·[SessionEvent.Escaped] 직후에 읽는다). 다음 퍼즐이 이미 맞춰져 있으면
+     * 한 번에 여럿이 풀린다. 화면은 이 범위에서 "실제 상황 팁"을 고른다. 아직 없으면 빈 범위다.
+     */
+    var lastSolved: IntRange = IntRange.EMPTY
+        private set
+
     /** 기록에 남길 수 있는 결과인가: 탈출 성공이고 건너뛴 퍼즐이 없음. */
     val isRecordEligible: Boolean get() = status == SessionStatus.ESCAPED && state.skippedIndices.isEmpty()
 
@@ -198,6 +205,7 @@ class GameSession private constructor(initial: SessionState, private val clock: 
     /**
      * 원상 복구 체크리스트(기획 F2·S3). 판이 바꾼 신호마다 원래 값과 현재 값을 비교해 자동 체크한다.
      * D1은 "핸들 중앙" 한 줄(중앙 ±5%면 체크). B1은 원복이 필요 없다. 원래 값을 모르는 신호는 줄을 만들지 않는다.
+     * C4 제상·L4 전조등은 판 시작 값(보통 꺼짐)으로 돌아오면 체크한다.
      */
     fun restoreChecklist(current: VehicleSignals): List<RestoreItem> {
         val snapshot = state.snapshot
@@ -211,6 +219,8 @@ class GameSession private constructor(initial: SessionState, private val clock: 
                 SignalId.L1 -> item(key, snapshot.ambientColor, current.ambientColor) { o, c -> ColorRule.sameRgb(o, c) }
                 SignalId.L2 -> item(key, snapshot.ambientBrightness, current.ambientBrightness) { o, c -> o == c }
                 SignalId.L3 -> item(key, key.seat?.let { snapshot.readingLights[it] }, key.seat?.let { current.readingLights[it] }) { o, c -> o == c }
+                SignalId.C4 -> item(key, snapshot.defroster, current.defroster) { o, c -> o == c }
+                SignalId.L4 -> item(key, snapshot.lowBeam, current.lowBeam) { o, c -> o == c }
                 SignalId.D1 -> {
                     val steering = target as Target.Steering
                     val angle = current.steeringAngle
@@ -255,6 +265,7 @@ class GameSession private constructor(initial: SessionState, private val clock: 
         after == JudgeState.Solved -> {
             val index = state.currentIndex
             advance()
+            lastSolved = index until state.currentIndex
             if (status == SessionStatus.ESCAPED) SessionEvent.Escaped(state.elapsedMs) else SessionEvent.PuzzleSolved(index)
         }
         after != before -> SessionEvent.JudgeChanged(state.currentIndex, after)

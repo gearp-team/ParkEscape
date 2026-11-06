@@ -136,7 +136,7 @@ class PlayModelTest {
 
     @Test
     fun demoStageCheck_listsOnlyDifferences() {
-        val stage0 = VehicleSignals(targetTemperature = 24f, fanSpeed = 2, ambientColor = 0x0000E5FF)
+        val stage0 = VehicleSignals(targetTemperature = 24f, fanSpeed = 2, ambientColor = 0x0000E5FF, defroster = false, lowBeam = false)
         // 에뮬레이터: 운전석 점유(VC) → 원시값이 뒤집혀 운전석 false, 비어 있는 좌석 true, 2열 오른쪽(2단계에서 켬) false
         val emulator = SeatOccupancy(
             mapOf(SeatPosition.DRIVER to false, SeatPosition.PASSENGER to true, SeatPosition.REAR_LEFT to true, SeatPosition.REAR_RIGHT to false),
@@ -147,9 +147,14 @@ class PlayModelTest {
         val wrongSeat = SeatOccupancy(
             mapOf(SeatPosition.DRIVER to true, SeatPosition.PASSENGER to true, SeatPosition.REAR_LEFT to true, SeatPosition.REAR_RIGHT to false),
         )
-        val diffs = DemoStageCheck.differences(VehicleSignals(targetTemperature = 22f, fanSpeed = 3, ambientColor = 0x00FFFFFF), wrongSeat)
-        assertEquals(listOf("운전석 온도", "앰비언트 색", "풍량", "좌석 점유"), diffs.map { it.item })
-        assertEquals("조수석·2열 왼쪽도 점유로 보임", diffs[3].current) // 운전석이 비었다고 단정하지 않는다(F3 QA MINOR)
+        val diffs = DemoStageCheck.differences(
+            VehicleSignals(targetTemperature = 22f, fanSpeed = 3, ambientColor = 0x00FFFFFF, defroster = true, lowBeam = null),
+            wrongSeat,
+        )
+        assertEquals(listOf("운전석 온도", "앰비언트 색", "풍량", "앞유리 제상", "전조등", "좌석 점유"), diffs.map { it.item })
+        assertEquals("조수석·2열 왼쪽도 점유로 보임", diffs[5].current) // 운전석이 비었다고 단정하지 않는다(F3 QA MINOR)
+        assertEquals(DemoDiff("앞유리 제상", "켜짐", "꺼짐"), diffs[3]) // 앞 판에서 켜 둔 채면 알린다
+        assertEquals(DemoDiff("전조등", "확인 안 됨", "꺼짐(VC Off)"), diffs[4])
         assertEquals(DemoDiff("운전석 온도", "22.0℃", "24.0℃"), diffs[0])
         assertEquals("흰색 계열(#FFFFFF)", diffs[1].current)
         // 알파는 보지 않는다
@@ -161,6 +166,7 @@ class PlayModelTest {
     private fun targetOf(g: Gauge): Any? = when (g) {
         is Gauge.Scale -> g.target
         is Gauge.Recirculation -> g.target
+        is Gauge.Switch -> g.target
         is Gauge.AmbientColor -> g.target
         is Gauge.ReadingLights -> g.target
         is Gauge.Steering -> g.target

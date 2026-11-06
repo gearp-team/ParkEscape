@@ -30,7 +30,7 @@ import java.util.Locale
  * 지원 범위(support), 현재값 읽기(read*), Flow 값을 logcat 태그 DATA로 남긴다.
  *   DATA SUPPORT <영역> <결과>
  *   DATA READ <신호> v=<값>
- *   DATA <신호> v=<값>          (C1·C2·C3·L1·L2·L3·D1·B1·F3)
+ *   DATA <신호> v=<값>          (C1·C2·C3·C4·L1·L2·L3·L4·D1·B1·F3)
  * 실행: adb shell am start -n com.team.pleosapp/.spike.DataCheckActivity
  */
 class DataCheckActivity : ComponentActivity() {
@@ -49,9 +49,11 @@ class DataCheckActivity : ComponentActivity() {
             log("READ C1 v=${container.climateRepository.readTargetTemperature()}")
             log("READ C2 v=${container.climateRepository.readFanSpeed()}")
             log("READ C3 v=${container.climateRepository.readRecirculation()}")
+            log("READ C4 v=${container.climateRepository.readDefroster()}")
             log("READ L1 v=${container.cabinLightRepository.readAmbientColor()?.let(::color)}")
             log("READ L2 v=${container.cabinLightRepository.readAmbientBrightness()}")
             log("READ L3 v=${container.cabinLightRepository.readReadingLights()}")
+            log("READ L4 v=${container.cabinLightRepository.readLowBeam()}")
             log("READ D1 v=${container.driveInputRepository.readSteeringAngle()}")
             log("READ B1 v=${container.driveInputRepository.readBrakePressed()}")
             log("READ F3 v=${occupancy(container.seatRepository.readOccupancy())}")
@@ -62,9 +64,11 @@ class DataCheckActivity : ComponentActivity() {
                 launch { container.climateRepository.targetTemperature.collect { show("C1", it) } }
                 launch { container.climateRepository.fanSpeed.collect { show("C2", it) } }
                 launch { container.climateRepository.recirculation.collect { show("C3", it) } }
+                launch { container.climateRepository.defroster.collect { show("C4", it) } }
                 launch { container.cabinLightRepository.ambientColor.collect { show("L1", it?.let(::color)) } }
                 launch { container.cabinLightRepository.ambientBrightness.collect { show("L2", it) } }
                 launch { container.cabinLightRepository.readingLights.collect { show("L3", it) } }
+                launch { container.cabinLightRepository.lowBeam.collect { show("L4", it) } }
                 launch { container.driveInputRepository.steeringAngle.collect { show("D1", it) } }
                 launch { container.driveInputRepository.brakePressed.collect { show("B1", it) } }
                 launch { container.seatRepository.occupancy.collect { show("F3", occupancy(it)) } }

@@ -77,6 +77,7 @@ private fun GameApp(state: GameUiState, vm: GameViewModel, onPauseDrawn: () -> U
                     remember(vm) { ResultActions(vm::newBoard, vm::goHome) },
                 )
             }
+            state.visibleTip?.let { tip -> SafetyTipCard(tip, Modifier.align(Alignment.TopCenter).padding(top = 24.dp)) }
             if (state.settingsOpen) SettingsPanel(state, vm)
             if (state.confirmOverwrite) {
                 val saved = state.saved

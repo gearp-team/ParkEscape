@@ -229,6 +229,8 @@ fun iconOf(signal: SignalId): Int = when (signal) {
     SignalId.C3 -> R.drawable.ic_car_fan_recirculate
     SignalId.L1, SignalId.L2 -> R.drawable.ic_light
     SignalId.L3 -> R.drawable.ic_lightbulb
+    SignalId.C4 -> R.drawable.ic_defrost
+    SignalId.L4 -> R.drawable.ic_headlight
     SignalId.D1 -> R.drawable.ic_steering
     SignalId.B1 -> R.drawable.ic_brake_pedal
 }

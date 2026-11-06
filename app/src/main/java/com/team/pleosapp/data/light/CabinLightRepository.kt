@@ -5,10 +5,11 @@ import com.team.pleosapp.data.signal.SignalCapability
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 실내 조명(퍼즐 L1·L2·L3). 읽기만 한다(setAmbientLight* 등 set* 호출 없음). 외부 등화 API는 쓰지 않는다.
+ * 조명(퍼즐 L1·L2·L3 실내 조명, L4 전조등). 읽기만 한다(setAmbientLight*·setLowBeamLightSwitch 등 set* 호출 없음).
+ * 외부 등화는 전조등(하향등) 상태만 읽는다. 상향등·안개등·미등 API는 쓰지 않는다.
  */
 interface CabinLightRepository {
-    /** L1·L2·L3 지원 범위. 처음 부를 때 capability를 조회하고, 끝까지 성공한 결과는 기억한다. */
+    /** L1·L2·L3·L4 지원 범위. 처음 부를 때 capability를 조회하고, 끝까지 성공한 결과는 기억한다. */
     suspend fun support(): CabinLightSupport
 
     /**
@@ -26,12 +27,17 @@ interface CabinLightRepository {
      */
     val readingLights: Flow<Map<SeatPosition, Boolean?>>
 
+    /** L4 전조등(하향등)이 켜져 있으면 true. 꺼짐·주간주행등은 false. 미지원·오류면 null. */
+    val lowBeam: Flow<Boolean?>
+
     /** 원상 복구 스냅샷용 현재 값 읽기. 실패하면 null. */
     suspend fun readAmbientColor(): Int?
 
     suspend fun readAmbientBrightness(): Int?
 
     suspend fun readReadingLights(): Map<SeatPosition, Boolean?>
+
+    suspend fun readLowBeam(): Boolean?
 }
 
 data class CabinLightSupport(
@@ -39,6 +45,8 @@ data class CabinLightSupport(
     val ambientBrightness: SignalCapability<Int>,
     /** 좌석 하나만 덮는 독서등 area. zones의 원소마다 좌석 하나다(에뮬레이터: 1열·2열 좌우 4좌석). */
     val readingLight: SignalCapability<Nothing>,
+    /** 전조등(하향등) 상태. 전역 신호라 zones는 비어 있다. */
+    val lowBeam: SignalCapability<Nothing>,
 ) {
     /** 독서등 자리 단서를 낼 수 있는 좌석. */
     val readingLightSeats: Set<SeatPosition>

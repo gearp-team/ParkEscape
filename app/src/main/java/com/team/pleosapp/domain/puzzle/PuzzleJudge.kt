@@ -83,6 +83,8 @@ class PuzzleJudge(val puzzle: Puzzle) {
         is Target.Brightness -> signals.ambientBrightness
         is Target.ReadingLight -> signals.readingLights[t.seat]
         is Target.Steering -> signals.steeringAngle?.let { if (it == 0f) 0f else it } // −0.0 = 0.0
+        is Target.Defroster -> signals.defroster
+        is Target.LowBeam -> signals.lowBeam
         is Target.BrakePresses -> signals.brakePressed
         Target.SealButton -> null
     }
@@ -94,6 +96,8 @@ class PuzzleJudge(val puzzle: Puzzle) {
         is Target.AmbientColor -> solvedIf((value as Int?)?.let { ColorRule.matches(it, t.color) } == true)
         is Target.Brightness -> solvedIf(value == t.level)
         is Target.ReadingLight -> solvedIf(value == true)
+        is Target.Defroster -> solvedIf(value == t.on)
+        is Target.LowBeam -> solvedIf(value == t.on)
         is Target.Steering -> steering!!.update(value as Float?, nowMs)
         is Target.BrakePresses -> brake!!.update(value as Boolean?, nowMs)
         Target.SealButton -> state

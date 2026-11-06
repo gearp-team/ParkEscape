@@ -19,7 +19,7 @@ data class GeneratorInput(
     val current: VehicleSignals,
     /** "내 차는 전기차" 설정. false면 공조 퍼즐 판당 2개·풍량 상한 = 범위 상한의 절반 */
     val isEv: Boolean = false,
-    /** 디버그 시드 고정(시연 모드): 신호 풀을 8종 전부로 고정하고 앰비언트 목표를 VC 프리셋 색으로 제한한다 */
+    /** 디버그 시드 고정(시연 모드): 신호 풀을 10종 전부로 고정하고 앰비언트 목표를 VC 프리셋 색으로 제한한다 */
     val demoMode: Boolean = false,
 )
 
@@ -40,6 +40,11 @@ sealed class GenerationResult {
  * - K: 3분 3개 / 5분 5개 / 10분 8개. 구성은 [BoardLength]. 마지막은 항상 B1 봉인(브레이크 미지원이면 화면 버튼).
  * - D1은 판당 1개. 비EV는 공조(C1~C3) 퍼즐 판당 2개, 풍량 목표는 범위 상한의 절반 이하.
  * - L3는 운전석이 아닌 참가 좌석 가운데 독서등 area가 있고 지금 꺼져 있는 좌석만.
+ * - C4(앞유리 제상)·L4(전조등)는 목표가 "켜짐" 하나다. 판 시작 때 꺼져 있을 때만 내고(켜져 있거나 모르면 뺀다) 판당 1개, 지시형·암호형만.
+ * - C4와 C3(내외기)는 같은 판에 내지 않는다(리더 결정 2026-11-06). 실차는 앞유리 제상을 켜면 외기·A/C로 바뀔 수 있고 김 서림에는
+ *   외기가 맞아서, "제상 뒤 내기 순환" 판은 막히거나 잘못된 조합을 가르친다. 둘 다 낼 수 있으면 판마다 한쪽만 고르고([Rules.variants]),
+ *   시작 가능 규칙도 두 경우 가운데 더 많이 채우는 쪽으로 센다.
+ *   C4는 공조라 비EV 공조 판당 2개에 들어간다.
  * - C1 목표: capability 양 끝에서 1℃ 이상 안쪽 ∩ 18~28℃ 정수, 현재값과 2℃ 이상 차이.
  * - 연쇄형: 앞 퍼즐의 답(D1 칸, C1 온도, C2 단수, L2 밝기)으로 C1·C2·L2 목표를 계산한다. 식은 "× m" 또는 "± b" 한 번.
  *   결과가 범위·제약을 지키는 식이 없으면 지시형으로 바꾼다.
@@ -57,7 +62,8 @@ object PuzzleGenerator {
     val COMFORT_CELSIUS = 18..28
     const val MIN_TEMPERATURE_GAP = 2f
     const val CIPHER_DECOYS = 2
-    private const val MAX_ATTEMPTS = 40
+    /** 다양성(암호형·연쇄형)을 채울 때까지 다시 뽑는 횟수. C4·L4가 늘어 연쇄형이 드물어져 40에서 80으로 올렸다(시드 200개 속성 테스트). */
+    private const val MAX_ATTEMPTS = 80
 
     private val DEMO_COLORS = listOf(NamedColor.PURPLE, NamedColor.BLUE)
     private val CHAIN_TARGETS = setOf(SignalId.C1, SignalId.C2, SignalId.L2)
@@ -76,6 +82,9 @@ object PuzzleGenerator {
 
         if (input.demoMode && input.seed == Seeds.DEMO && length == BoardLength.FIVE) {
             return GenerationResult.Success(demoBoard(rules, input, participants))
+        }
+        if (input.demoMode && input.seed == Seeds.DEMO_SAFETY && length == BoardLength.FIVE) {
+            return GenerationResult.Success(safetyDemoBoard(rules))
         }
 
         val rng = SeededRandom(Seeds.hash(input.seed))
@@ -117,7 +126,14 @@ object PuzzleGenerator {
 
     private fun buildBoard(rules: Rules, input: GeneratorInput, length: BoardLength, kinds: List<SignalKey>, rng: SeededRandom): Board? {
         val contentCount = length.puzzleCount - 1
-        val sequence = chooseSignals(rules, kinds, contentCount, rng)
+        // C3·C4가 함께 후보면 한쪽만 쓰는 후보 목록을 고른다(채울 수 있는 쪽만. 충돌이 없으면 rng를 쓰지 않아 기존 판이 그대로다)
+        val feasible = rules.variants(kinds).filter { rules.capacityOf(it) >= contentCount }
+        val usable = when (feasible.size) {
+            0 -> return null
+            1 -> feasible.single()
+            else -> rng.pick(feasible)
+        }
+        val sequence = chooseSignals(rules, usable, contentCount, rng)
         if (sequence.size < contentCount) return null
         val reasoning = minOf(length.reasoning, sequence.size)
         val slots = rng.shuffled(List(reasoning) { true } + List(sequence.size - reasoning) { false })
@@ -165,7 +181,8 @@ object PuzzleGenerator {
 
     /**
      * 신호 순서를 정한다. 먼저 서로 다른 신호(L3는 좌석이 달라도 한 신호)를 하나씩 쓰고, 모자라면 같은 신호를 한 번 더 쓴다.
-     * 상한은 [Rules.contentCapacity]와 같다: 신호마다 실제로 낼 수 있는 목표 수(최대 2), 비EV 공조 합계 2, D1 1.
+     * 상한은 [Rules.capacityOf]와 같다: 신호마다 실제로 낼 수 있는 목표 수(최대 2), 비EV 공조 합계 2, D1 1.
+     * [kinds]에는 C3·C4가 함께 들어 있지 않다([buildBoard]가 [Rules.variants]에서 하나를 고른다).
      * 그래서 가능한 길이면 항상 [count]개를 채우고, 같은 신호가 연달아 오지 않게 늘어놓을 수 있다.
      */
     private fun chooseSignals(rules: Rules, kinds: List<SignalKey>, count: Int, rng: SeededRandom): List<SignalKey> {
@@ -215,6 +232,8 @@ object PuzzleGenerator {
             SignalId.L1 -> rules.colorTargets(p).takeIf { it.isNotEmpty() }?.let { Target.AmbientColor(rng.pick(it)) }
             SignalId.L2 -> rules.brightnessDirect(p.brightness)?.let { Target.Brightness(it) }
             SignalId.L3 -> key.seat?.let { Target.ReadingLight(it) }
+            SignalId.C4 -> Target.Defroster(on = true).takeIf { p.defroster == false }
+            SignalId.L4 -> Target.LowBeam(on = true).takeIf { p.lowBeam == false }
             SignalId.D1 -> rules.steeringBounds()?.let { (min, max) ->
                 Target.Steering(rng.pick(SteeringSide.entries), rng.nextIntIn(1, 3), min, max)
             }
@@ -283,6 +302,8 @@ object PuzzleGenerator {
         is Target.AmbientColor -> CipherMeaning.Color(target.color)
         is Target.ReadingLight -> CipherMeaning.Seat(target.seat)
         is Target.Steering -> CipherMeaning.Steering(target.side, target.bin)
+        is Target.Defroster -> CipherMeaning.Switch(target.on)
+        is Target.LowBeam -> CipherMeaning.Switch(target.on)
         is Target.BrakePresses, Target.SealButton -> error("seal puzzles are never ciphers")
     }
 
@@ -298,6 +319,8 @@ object PuzzleGenerator {
             is Target.Steering -> SteeringSide.entries.flatMap { side -> (1..3).map { side to it } }
                 .filter { it != target.side to target.bin }
                 .map { (side, bin) -> CipherMeaning.Steering(side, bin) }
+            is Target.Defroster -> listOf(CipherMeaning.Switch(!target.on))
+            is Target.LowBeam -> listOf(CipherMeaning.Switch(!target.on))
             is Target.BrakePresses, Target.SealButton -> emptyList()
         },
     )
@@ -353,6 +376,32 @@ object PuzzleGenerator {
         return Board(input.seed, BoardLength.FIVE.minutes, puzzles, table, demo = true)
     }
 
+    /**
+     * 시드 demo-safety · 5분 판(위급할 때 쓰는 조작을 손에 익히는 시연): ① L4 지시형 전조등 → ② D1 지시형 "왼쪽 2번 칸"
+     * → ③ L1 암호형 ◇ = 보라(비상 조명) → ④ C4 암호형 ■ = 켜짐(앞유리 제상) → ⑤ B1 두 번.
+     * 지시형 2(L4·D1) · 암호형 2(L1·C4) · 봉인 1이고, C3는 넣지 않는다(C4와 같은 판 금지). 팁은 ①·④에서 나온다.
+     * 0단계 초기값(앰비언트 청록, 제상 꺼짐, 전조등 꺼짐, 핸들 중앙)을 가정한다. 전조등·제상이 이미 켜져 있으면 그 퍼즐은 시작하자마자
+     * 풀린다(시작 전 0단계 경고가 알려 준다). 앰비언트 목표는 VC 프리셋으로 재현되는 보라다.
+     */
+    private fun safetyDemoBoard(rules: Rules): Board {
+        val (min, max) = rules.steeringBounds() ?: (-470f to 500f)
+        val puzzles = listOf(
+            Puzzle(0, SignalId.L4, ClueType.DIRECT, Target.LowBeam(on = true)),
+            Puzzle(1, SignalId.D1, ClueType.DIRECT, Target.Steering(SteeringSide.LEFT, 2, min, max)),
+            Puzzle(2, SignalId.L1, ClueType.CIPHER, Target.AmbientColor(NamedColor.PURPLE), cipherSymbol = CipherSymbol.DIAMOND),
+            Puzzle(3, SignalId.C4, ClueType.CIPHER, Target.Defroster(on = true), cipherSymbol = CipherSymbol.SQUARE),
+            Puzzle(4, SignalId.B1, ClueType.SEAL, Target.BrakePresses(2)),
+        )
+        val table = listOf(
+            CipherEntry(CipherSymbol.DIAMOND, CipherMeaning.Color(NamedColor.PURPLE)),
+            CipherEntry(CipherSymbol.SQUARE, CipherMeaning.Switch(true)),
+            CipherEntry(CipherSymbol.CIRCLE, CipherMeaning.Color(NamedColor.BLUE)),
+            CipherEntry(CipherSymbol.STAR, CipherMeaning.Switch(false)),
+            CipherEntry(CipherSymbol.TRIANGLE, CipherMeaning.Color(NamedColor.GREEN)),
+        )
+        return Board(Seeds.DEMO_SAFETY, BoardLength.FIVE.minutes, puzzles, table, demo = true)
+    }
+
     /** 시연 판의 연쇄형. 결과가 제약 밖이면 계산값에 가장 가까운 유효 목표의 지시형으로 바꾼다. */
     private fun demoChain(signal: SignalId, formula: ChainFormula, valid: List<Int>, index: Int, earlier: List<Puzzle>): Puzzle {
         val input = earlier[formula.sourceIndex].numericAnswer!!
@@ -376,6 +425,8 @@ object PuzzleGenerator {
         var brightness: Int? = current.ambientBrightness
         val readingLights: MutableMap<SeatPosition, Boolean?> = current.readingLights.toMutableMap()
         var steering: Float? = current.steeringAngle
+        var defroster: Boolean? = current.defroster
+        var lowBeam: Boolean? = current.lowBeam
 
         fun apply(target: Target) {
             when (target) {
@@ -386,6 +437,8 @@ object PuzzleGenerator {
                 is Target.Brightness -> brightness = target.level
                 is Target.ReadingLight -> readingLights[target.seat] = true
                 is Target.Steering -> steering = 0f // 중앙 복귀까지가 퍼즐이다
+                is Target.Defroster -> defroster = target.on
+                is Target.LowBeam -> lowBeam = target.on
                 is Target.BrakePresses, Target.SealButton -> Unit
             }
         }
@@ -404,11 +457,13 @@ object PuzzleGenerator {
             if (p.temperature != null && temperatureTargets(p.temperature).isNotEmpty()) add(SignalKey(SignalId.C1))
             if (p.fan != null && fanTargets(p.fan).isNotEmpty()) add(SignalKey(SignalId.C2))
             if (pool.recirculation && p.recirculation != null) add(SignalKey(SignalId.C3))
+            if (pool.defroster && p.defroster == false) add(SignalKey(SignalId.C4))
             if (pool.ambientColor && p.colorArgb != null && colorTargets(p).isNotEmpty()) add(SignalKey(SignalId.L1))
             if (p.brightness != null && brightnessDirect(p.brightness) != null) add(SignalKey(SignalId.L2))
             participants
                 .filter { it != SeatPosition.DRIVER && it in pool.readingLightSeats && p.readingLights[it] == false }
                 .forEach { add(SignalKey(SignalId.L3, it)) }
+            if (pool.lowBeam && p.lowBeam == false) add(SignalKey(SignalId.L4))
             if (steeringBounds() != null && p.steering != null) add(SignalKey(SignalId.D1))
         }
 
@@ -416,9 +471,20 @@ object PuzzleGenerator {
          * 봉인을 뺀 퍼즐을 최대 몇 개 만들 수 있는가([chooseSignals]와 같은 상한).
          * - 신호마다 [keyCapacity]의 합, 단 신호당 최대 2개(L3는 좌석이 여럿이어도 2개), 비EV 공조 합계 2개, D1 1개.
          * - 봉인을 뺀 서로 다른 신호가 2종 미만이면 같은 신호가 연달아 올 수밖에 없으므로 1개로 본다(어떤 길이도 불가).
+         * - C3·C4가 함께 후보면 둘 중 하나만 쓰는 두 경우([variants]) 가운데 큰 쪽이다.
          * 예) 비EV + 공조 3종 + D1 → 2 + 1 = 3(+ 봉인 = 4): 3분 판만 가능.
          */
-        fun contentCapacity(kinds: List<SignalKey>): Int {
+        fun contentCapacity(kinds: List<SignalKey>): Int = variants(kinds).maxOf { capacityOf(it) }
+
+        /** 같은 판에 함께 낼 수 없는 신호(C3·C4)를 나눈 후보 목록들. 충돌이 없으면 [kinds] 하나다. 순서는 결정적이다. */
+        fun variants(kinds: List<SignalKey>): List<List<SignalKey>> {
+            val signals = kinds.map { it.signal }.toSet()
+            if (SignalId.C3 !in signals || SignalId.C4 !in signals) return listOf(kinds)
+            return listOf(kinds.filter { it.signal != SignalId.C4 }, kinds.filter { it.signal != SignalId.C3 })
+        }
+
+        /** 충돌 없는 후보 목록 하나로 만들 수 있는 최대 퍼즐 수(봉인 제외). */
+        fun capacityOf(kinds: List<SignalKey>): Int {
             val perSignal = kinds.groupBy { it.signal }.mapValues { (_, keys) -> minOf(MAX_PER_KIND, keys.sumOf { keyCapacity(it) }) }
             val climate = perSignal.filterKeys { it.isClimate }.values.sum()
             val total = (if (isEv) climate else minOf(NON_EV_CLIMATE_MAX, climate)) + perSignal.filterKeys { !it.isClimate }.values.sum()
@@ -448,13 +514,13 @@ object PuzzleGenerator {
 
         /**
          * 이 신호(키)로 한 판에 낼 수 있는 퍼즐 수(0~2). 실제로 낼 수 있는 목표로 센다(QA F2-engine 2회차 실패 3).
-         * C1·C2는 첫 목표 뒤에도 목표가 남을 때만 2, C3·L1·L2는 2(되돌리기·다른 색·반대쪽 끝), L3 좌석·D1은 1.
+         * C1·C2는 첫 목표 뒤에도 목표가 남을 때만 2, C3·L1·L2는 2(되돌리기·다른 색·반대쪽 끝), L3 좌석·D1·C4·L4는 1.
          */
         fun keyCapacity(key: SignalKey): Int = when (key.signal) {
             SignalId.C1 -> if (temperatureTargets(currentTemperature, keepFollowUp = true).isNotEmpty()) 2 else 1
             SignalId.C2 -> if (fanTargets(currentFan, keepFollowUp = true).isNotEmpty()) 2 else 1
             SignalId.C3, SignalId.L1, SignalId.L2 -> MAX_PER_KIND
-            SignalId.L3, SignalId.D1 -> 1
+            SignalId.L3, SignalId.D1, SignalId.C4, SignalId.L4 -> 1
             SignalId.B1 -> 0
         }
 

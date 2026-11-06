@@ -58,6 +58,7 @@ fun ColumnScope.SignalGauge(play: PlayState, actions: PlayActions, wide: Boolean
     when (val g = play.gauge) {
         is Gauge.Scale -> ScaleGauge(g, wide)
         is Gauge.Recirculation -> RecirculationGauge(g, wide)
+        is Gauge.Switch -> SwitchGauge(g, wide)
         is Gauge.AmbientColor -> ColorGauge(g, wide)
         is Gauge.ReadingLights -> ReadingGauge(g, wide)
         is Gauge.Steering -> SteeringGauge(g, wide)
@@ -200,6 +201,33 @@ private fun ColumnScope.RecirculationGauge(g: Gauge.Recirculation, wide: Boolean
     )
     Row(Modifier.fillMaxWidth().padding(top = 40.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         listOf(false to outside, true to inside).forEach { (value, label) ->
+            StateTile(label, selected = g.current == value, target = g.target == value, Modifier.weight(1f))
+        }
+    }
+}
+
+// ---- C4·L4 -------------------------------------------------------------------------------------
+
+@Composable
+private fun ColumnScope.SwitchGauge(g: Gauge.Switch, wide: Boolean) {
+    val (icon, title) = when (g.signal) {
+        SignalId.C4 -> R.drawable.ic_defrost to R.string.play_gauge_defroster
+        else -> R.drawable.ic_headlight to R.string.play_gauge_low_beam
+    }
+    GaugeTitle(icon, stringResource(title))
+    val off = stringResource(R.string.play_light_off)
+    val on = stringResource(R.string.play_light_on)
+    BigValue(
+        when (g.current) {
+            null -> stringResource(R.string.play_value_unknown)
+            true -> on
+            false -> off
+        },
+        wide,
+        Modifier.padding(top = 20.dp),
+    )
+    Row(Modifier.fillMaxWidth().padding(top = 40.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        listOf(false to off, true to on).forEach { (value, label) ->
             StateTile(label, selected = g.current == value, target = g.target == value, Modifier.weight(1f))
         }
     }

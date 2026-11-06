@@ -39,7 +39,7 @@ enum class NamedColor(val hue: Float) {
 @Serializable
 enum class SteeringSide { LEFT, RIGHT }
 
-/** 암호표 기호. 한 판 안에서 겹치지 않는다(최대 12개 = 10분 판 암호형 4개 × 진짜 1 + 미끼 2). */
+/** 암호표 기호. 한 판 안에서 겹치지 않는다(최대 12개 = 10분 판 암호형 4개 × 진짜 1 + 미끼 2. 켜짐·격벽은 미끼가 1개). */
 @Serializable
 enum class CipherSymbol(val glyph: String) {
     DIAMOND("◇"),
@@ -89,6 +89,16 @@ sealed class Target {
     @SerialName("readingLight")
     data class ReadingLight(val seat: SeatPosition) : Target()
 
+    /** C4: 앞유리 제상(일치). 생성기는 "켜짐"만 낸다(판 시작 때 이미 켜져 있으면 그 판에서 C4를 내지 않는다). */
+    @Serializable
+    @SerialName("defroster")
+    data class Defroster(val on: Boolean = true) : Target()
+
+    /** L4: 전조등(하향등, 일치). 생성기는 "켜짐"만 낸다. */
+    @Serializable
+    @SerialName("lowBeam")
+    data class LowBeam(val on: Boolean = true) : Target()
+
     /**
      * D1: 방향·칸(1~3)에 1초 이상 머문 뒤 중앙(±5%)으로 복귀. 칸 경계는 판을 만들 때의 capability 범위로 정한다.
      */
@@ -130,6 +140,11 @@ sealed class CipherMeaning {
     @Serializable
     @SerialName("number")
     data class Number(val value: Int) : CipherMeaning()
+
+    /** 켜짐/꺼짐(C4 제상, L4 전조등) */
+    @Serializable
+    @SerialName("switch")
+    data class Switch(val on: Boolean) : CipherMeaning()
 }
 
 @Serializable

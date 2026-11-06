@@ -54,6 +54,9 @@ sealed class Gauge {
     /** C3 내외기: 외기 / 내기 순환 두 칸. */
     data class Recirculation(val current: Boolean?, val target: Boolean?) : Gauge()
 
+    /** C4 앞유리 제상·L4 전조등: 꺼짐 / 켜짐 두 칸. */
+    data class Switch(val signal: SignalId, val current: Boolean?, val target: Boolean?) : Gauge()
+
     /** L1 앰비언트 색: 현재 색과 목표 후보 색 6개. */
     data class AmbientColor(val currentArgb: Int?, val target: NamedColor?) : Gauge()
 
@@ -117,6 +120,8 @@ object Gauges {
                 if (show) t.level.toFloat()..t.level.toFloat() else null,
             )
             is Target.Recirculation -> Gauge.Recirculation(s.recirculation, if (show) t.on else null)
+            is Target.Defroster -> Gauge.Switch(SignalId.C4, s.defroster, if (show) t.on else null)
+            is Target.LowBeam -> Gauge.Switch(SignalId.L4, s.lowBeam, if (show) t.on else null)
             is Target.AmbientColor -> Gauge.AmbientColor(s.ambientColor, if (show) t.color else null)
             is Target.ReadingLight -> Gauge.ReadingLights(PASSENGER_SEATS.map { it to s.readingLights[it] }, if (show) t.seat else null)
             is Target.Steering -> Gauge.Steering(
@@ -173,6 +178,8 @@ object RestoreRows {
             SignalId.L1 -> "실내 조명 색"
             SignalId.L2 -> "실내 조명 밝기"
             SignalId.L3 -> "독서등 · ${item.key.seat?.let(ClueWriter::seatName).orEmpty()}"
+            SignalId.C4 -> "앞유리 제상"
+            SignalId.L4 -> "전조등"
             SignalId.D1 -> "핸들"
             SignalId.B1 -> "브레이크"
         }
@@ -192,7 +199,7 @@ object RestoreRows {
             SignalId.C3 -> if (value == true) "내기 순환" else "외기"
             SignalId.L1 -> "${ColorNames.describe(value as Int)}(${ColorNames.hex(value)})"
             SignalId.L2 -> value.toString()
-            SignalId.L3 -> if (value == true) "켜짐" else "꺼짐"
+            SignalId.L3, SignalId.C4, SignalId.L4 -> ClueWriter.switchName(value == true)
             SignalId.D1, SignalId.B1 -> value.toString()
         }
     }

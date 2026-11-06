@@ -1,11 +1,20 @@
 # P단 탈출 (ParkEscape)
 
-> 한 줄 소개: 주차·충전·휴식으로 차가 서 있는 5~10분, 공조·실내 조명·핸들·브레이크가 게임 패드가 되어 혼자 또는 가족과 함께 푸는 정차 전용 방탈출 게임.
+> 한 줄 소개: 기어 P로 서 있는 5분, 내 차의 실제 조작부를 만져야 풀리는 방탈출 게임 — 놀다 보면 위급할 때 쓸 버튼이 손에 익습니다.
 
 Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에서 동작하는 차량용 Android 앱입니다. 현대자동차그룹 차량용 앱 개발 공모전 출품작입니다.
 
+![P단 탈출 핵심 콘셉트](docs/images/concept.png)
+
+많은 운전자가 취급설명서를 읽지 않고, 차를 바꾸면 버튼 위치도 바뀝니다. 김 서림·터널·침수 같은 위기 순간에 필요한 조작을 찾느라 늦지 않도록, 정차 중에 실제 조작부로 퍼즐을 풀며 손에 익히게 합니다. 시연 영상은 [`demo/GearP_ParkEscape_demo.mp4`](demo/GearP_ParkEscape_demo.mp4), 기획 상세는 [`docs/app-plan.md`](docs/app-plan.md)에 있습니다.
+
+![위기 상황과 조작](docs/images/crisis.png)
+
+![1차 제출 앱 실제 화면](docs/images/screens.png)
+
 - 기어가 P(정차)일 때만 판이 열립니다. 판마다 퍼즐 조합·순서·목표값·암호표가 바뀝니다(3·5·10분 판).
-- 단서를 풀어 차의 실내 조작부(공조 온도·풍량·내외기, 앰비언트 색·밝기, 독서등, 핸들, 브레이크)를 직접 조작하면, 앱이 Vehicle SDK로 그 값을 읽어 정답을 판정합니다. 앱은 차를 제어하지 않습니다.
+- 단서를 풀어 차의 조작부(공조 온도·풍량·내외기·앞유리 제상, 앰비언트 색·밝기, 독서등, 전조등, 핸들, 브레이크)를 직접 조작하면, 앱이 Vehicle SDK로 그 값을 읽어 정답을 판정합니다. 앱은 차를 제어하지 않습니다.
+- 놀면서 위급할 때 쓸 버튼이 손에 익도록, 앞유리 제상·전조등·내기 순환 퍼즐을 풀면 "실제 상황에서는" 카드로 그 조작을 언제 쓰는지 한 줄로 알려 줍니다. 앞유리 제상과 내기 순환은 같은 판에 나오지 않습니다(김 서림에는 외기가 맞고, 차종에 따라 제상이 외기로 바꿉니다).
 - 좌석 점유로 동승자 자리를 잡고, 그 자리에서만 풀 수 있는 단서(독서등)를 섞어 함께 풉니다.
 - 출발(기어 D)하면 시스템이 앱을 가리는 순간 판을 저장하고 멈춥니다. 다시 정차하면 P 확인을 거쳐 이어합니다. 판이 끝나면 바꾼 설정을 원래대로 돌리도록 체크리스트를 보여 줍니다.
 
@@ -19,16 +28,16 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 4. 앱 라이브러리에서 **P단 탈출**을 실행합니다.
 5. 기어가 P일 때 판 길이를 고르고 "시작" → 참가 자리 확인 → "기어 P·주차 브레이크를 확인했어요"를 누르면 판이 시작됩니다.
 6. 화면의 단서대로 Virtual Console에서 값을 바꾸면 퍼즐이 풀립니다.
-   - 공조(목표 온도·풍량·내외기): Climate
-   - 앰비언트 색·밝기, 독서등: Convenience
+   - 공조(목표 온도·풍량·내외기·앞유리 제상): Climate
+   - 앰비언트 색·밝기, 독서등, 전조등(외부등 Low Beam): Convenience
    - 핸들 각도, 브레이크: Motion
    - 기어 P/D: Motion. D로 바꾸면 시스템이 앱을 "주행 중에는 사용할 수 없습니다." 화면으로 덮고, 앱은 그 순간 판을 저장하고 일시정지합니다. 다시 P로 바꾸면 "이어하기" → P 확인으로 같은 퍼즐부터 이어집니다(저절로 다시 시작하지 않음).
 
 ### 디버그 빌드 전용 옵션
-- 시연 시드 고정: `adb shell am start -n com.team.pleosapp/.MainActivity --es seed demo5` (신호 풀 8종 고정, 기획 5절 시연 판)
+- 시연 시드 고정: `adb shell am start -n com.team.pleosapp/.MainActivity --es seed demo5` (신호 풀 10종 고정, 기획 5절 시연 판). `--es seed demo-safety`는 위급할 때 쓰는 조작을 손에 익히는 5분 판입니다(전조등 → 핸들 → 앰비언트 색 → 앞유리 제상 → 브레이크).
 - Fake SDK 빌드(`-Ppleos.useFakeSdk=true`)에서 주행 상태 바꾸기: `adb shell am start -n com.team.pleosapp/.MainActivity --es fakeGate drive` (`park`·`idle`·`drive`)
 - Fake SDK 빌드는 퍼즐마다 6초 뒤 신호를 목표값으로 바꿔 판을 자동으로 풀고, 결과 화면에서 6초 뒤 원래 값으로 되돌립니다(영상 예비용). 끄기: `--ez autoPlay false`
-- 시드를 고정해(debug 빌드) 시작하면 시연 0단계(운전석 24℃, 앰비언트 청록 `#00e5ff`, 풍량 2단, 운전석 점유)와 다른 값을 보여 주고 그대로 시작할지 묻습니다. release 빌드에는 없습니다.
+- 시드를 고정해(debug 빌드) 시작하면 시연 0단계(운전석 24℃, 앰비언트 청록 `#00e5ff`, 풍량 2단, 앞유리 제상 꺼짐, 전조등 꺼짐(Virtual Console `Off`), 운전석 점유)와 다른 값을 보여 주고 그대로 시작할지 묻습니다. release 빌드에는 없습니다.
 - 주행 전환 측정 로그: `adb logcat -s F1GATE` (규제 콜백 → 리스너 해제 → S-P 그리기 → 저장 시각)
 
 ## 테스트 환경 및 필요한 설정
@@ -63,8 +72,8 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 
 | SDK | 버전 | 사용 API | 퍼미션 |
 |---|---|---|---|
-| Vehicle | 2.3.2 | `HVAC.checkHvacTemperatureCapabilities`·`registerHvacTemperature`·`getHvacTemperature`, `checkHvacFanSpeedCapabilities`·`registerHvacFanSpeed`·`getHvacFanSpeed`, `checkHvacRecirculationCapabilities`·`registerHvacRecirculationState`·`getHvacRecirculationState` (공조 설정값: 목표 온도·풍량·내외기) | `pleos.car.permission.CAR_CLIMATE` |
-| Vehicle | 2.3.2 | `Light.checkAmbientLightBrightnessColorCapabilities`·`registerAmbientLightBrightnessColorListener`·`getAmbientLightBrightnessColor`, `checkAmbientLightBrightnessCapabilities`·`registerAmbientLightBrightnessListener`·`getAmbientLightBrightness`, `checkReadingLightStateCapabilities`·`registerReadingLightState`·`getCurrentReadingLightState` (실내 조명: 앰비언트 색·밝기, 독서등. 외부 등화는 쓰지 않음) | `pleos.car.permission.CAR_LIGHTS` |
+| Vehicle | 2.3.2 | `HVAC.checkHvacTemperatureCapabilities`·`registerHvacTemperature`·`getHvacTemperature`, `checkHvacFanSpeedCapabilities`·`registerHvacFanSpeed`·`getHvacFanSpeed`, `checkHvacRecirculationCapabilities`·`registerHvacRecirculationState`·`getHvacRecirculationState`, `checkHvacDefrosterCapabilities`·`registerHvacDefrosterState`·`getHvacDefrosterState` (공조 설정값: 목표 온도·풍량·내외기·앞유리 제상) | `pleos.car.permission.CAR_CLIMATE` |
+| Vehicle | 2.3.2 | `Light.checkAmbientLightBrightnessColorCapabilities`·`registerAmbientLightBrightnessColorListener`·`getAmbientLightBrightnessColor`, `checkAmbientLightBrightnessCapabilities`·`registerAmbientLightBrightnessListener`·`getAmbientLightBrightness`, `checkReadingLightStateCapabilities`·`registerReadingLightState`·`getCurrentReadingLightState`, `checkLowBeamLightStateCapabilities`·`registerLowBeamLightState`·`getCurrentLowBeamLightState` (조명: 앰비언트 색·밝기, 독서등, 전조등(하향등) 상태. 상향등·안개등 등 다른 외부 등화는 쓰지 않음) | `pleos.car.permission.CAR_LIGHTS` |
 | Vehicle | 2.3.2 | `SteeringWheel.checkSteeringWheelAngleCapabilities`·`registerSteeringWheelAngle`·`getCurrentSteeringWheelAngle`, `Brake.checkBrakePedalStatusCapabilities`·`registerBrakePedalStatus`·`getCurrentBrakePedalStatus` (정차 중 핸들 각도·브레이크 페달) | `pleos.car.permission.CAR_DRIVE` |
 | Vehicle | 2.3.2 | `Seat.checkSeatOccupancyCapabilities`·`getCurrentSeatOccupancy` (좌석 점유: S1 준비 화면에 들어갈 때 한 번 읽어 참가자 좌석 초기값으로만 쓴다. `registerSeatOccupancy`는 Repository에 구현만 있고 화면은 구독하지 않는다) | `pleos.car.permission.CAR_SEATS` |
 | AAOS Car API | – | `CarUxRestrictionsManager` (주행 규제: 정차일 때만 시작·이어하기, 주행 전환 시 일시정지) | – |
@@ -75,6 +84,7 @@ Pleos Connect(현대자동차그룹 차량용 인포테인먼트 플랫폼)에�
 
 - **독서등:** `Light.unregisterReadingLightState`가 해제 대신 리스너를 다시 등록합니다(소스 `LightImpl.unregisterReadingLightState`). 해제를 부르면 재개할 때마다 리스너가 쌓입니다.
 - **앰비언트 색·밝기:** `PropertyCallback.isEmptyPleosPropertyId`(소스 `PropertyCallback.kt:215-224`)가 속성 이름의 앞부분이 같으면 같은 속성으로 셉니다. 그래서 `INTERIOR_LIGHTS_AMBIENT_BRIGHTNESS`가 `INTERIOR_LIGHTS_AMBIENT_BRIGHTNESS_COLOR` 리스너까지 자기 것으로 셉니다. 색 리스너가 있는 채로 밝기 리스너를 붙이면 차량 서비스 구독을 건너뛰어 밝기 이벤트가 오지 않습니다. 앱은 밝기를 먼저 등록한 뒤 색을 등록하고, 해제하지 않습니다.
+- **앞유리 제상·전조등(에뮬레이터 실측):** 구독하지 않는 동안 값이 바뀌면 차량 서비스가 등록 직후 예전 값(예: 전조등 켜짐)을 먼저 보내고 몇 ms 뒤 현재 값을 보냅니다. 등록 직후 첫 값이 사라지는 경우도 있습니다. 앱은 이 두 신호의 등록 직후 300ms 동안 온 값을 버리고 `get`으로 읽은 현재 값에서 시작합니다.
 
 ## APK
 
